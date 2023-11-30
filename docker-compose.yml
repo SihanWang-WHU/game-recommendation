@@ -1,0 +1,45 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:16.1
+    environment:
+      POSTGRES_PASSWORD: 
+      POSTGRES_DB: test
+      POSTGRES_USER: postgres
+    ports:
+      - "5439:5432"
+    volumes:
+      - /Users/chiuchiu/Desktop/game-recommendation-main/dataset
+
+  redis:
+    image: redis:7.2.3
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: 
+      MONGO_INITDB_ROOT_PASSWORD: 
+    volumes:
+      - mongodata:/data/db
+
+  neo4j:
+    image: neo4j:latest
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/
+    volumes:
+      - /Users/chiuchiu/Desktop/game-recommendation-main/neo4j_import:/var/lib/neo4j/import
+
+volumes:
+  pgdata:
+  redisdata:
+  mongodata:
+  neo4jdata:
