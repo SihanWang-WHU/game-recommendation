@@ -37,6 +37,7 @@ services:
       NEO4J_AUTH: neo4j/neopassword
     volumes:
       - neo4jdata:/data
+      - ./neo4j_import:/var/lib/neo4j/import
 
 volumes:
   pgdata:

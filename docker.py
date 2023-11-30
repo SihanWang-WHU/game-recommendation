@@ -3,6 +3,7 @@ import redis
 import psycopg2
 import pymongo
 from neo4j import GraphDatabase
+from tqdm import tqdm
 import random
 import time
 import json
@@ -29,7 +30,96 @@ import numpy as np
 #
 #
 # # Function to connect to the database and import CSV data to PostgreSQL
-# def import_data_to_postgres(csv_file_path, pg_conn, pg_cursor):
+def import_data_to_postgres(csv_file_path, category, pg_conn, pg_cursor):
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS games (
+        app_id INT PRIMARY KEY,
+        title VARCHAR(255),
+        date_release DATE,
+        win BOOLEAN,
+        mac BOOLEAN,
+        linux BOOLEAN,
+        rating VARCHAR(50),
+        positive_ratio INT,
+        user_reviews INT,
+        price_final DECIMAL(10, 2),
+        price_original DECIMAL(10, 2),
+        discount DECIMAL(5, 2),
+        steam_deck BOOLEAN);
+    
+    CREATE TABLE IF NOT EXISTS recommendations (
+        app_id INT,
+        helpful INT,
+        funny INT,
+        date DATE,
+        is_recommended BOOLEAN,
+        hours DECIMAL(10, 1),
+        user_id INT,
+        review_id INT PRIMARY KEY,
+        FOREIGN KEY (app_id) REFERENCES games(app_id));
+    CREATE TABLE IF NOT EXISTS users (
+        user_id INT PRIMARY KEY,
+        products INT,
+        reviews INT); """
+    pg_cursor.execute(create_table_query)
+    pg_conn.commit()
+
+    if category == 'games':
+        with open(csv_file_path, 'r', encoding='utf-8-sig') as file:
+            reader = csv.DictReader(file)
+            for row in tqdm(reader):
+                insert_query = """
+                INSERT INTO games (app_id, title, date_release, win, mac, linux, 
+                rating, positive_ratio, user_reviews, 
+                price_final, price_original, discount, steam_deck)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                values = [row[field] for field in reader.fieldnames]
+                pg_cursor.execute(insert_query, values)
+            pg_conn.commit()
+
+    if category == 'recommendations':
+        with open(csv_file_path, 'r', encoding='utf-8-sig') as file:
+            reader = csv.DictReader(file)
+            for row in tqdm(reader):
+                insert_query = """
+                INSERT INTO recommendations (app_id, helpful, funny, date, 
+                is_recommended, hours, user_id, review_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                values = [row[field] for field in reader.fieldnames]
+                pg_cursor.execute(insert_query, values)
+            pg_conn.commit()
+
+    if category == 'users':
+        with open(csv_file_path, 'r', encoding='utf-8-sig') as file:
+            reader = csv.DictReader(file)
+            for row in tqdm(reader):
+                insert_query = """
+                INSERT INTO users (user_id, products, reviews)
+                VALUES (%s, %s, %s)
+                """
+                values = [row[field] for field in reader.fieldnames]
+                pg_cursor.execute(insert_query, values)
+            pg_conn.commit()
+
+def import_data_to_neo4j(driver):
+    with driver.session() as session:
+        # 导入用户数据
+        session.run("LOAD CSV WITH HEADERS FROM 'file:///users_DEMO.csv' AS line "
+                    "CREATE (:User {userId: line.user_id, products: toInteger(line.products), reviews: toInteger(line.reviews)})")
+
+        # 导入游戏数据
+        session.run("LOAD CSV WITH HEADERS FROM 'file:///games.csv' AS line "
+                    "CREATE (:Game {appId: line.app_id, title: line.title})")
+
+        # 导入推荐关系
+        session.run("LOAD CSV WITH HEADERS FROM 'file:///recommendations_DEMO.csv' AS line "
+                    "MATCH (user:User {userId: line.user_id}) "
+                    "MATCH (game:Game {appId: line.app_id}) "
+                    "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
+
+
 #
 #
 #
@@ -51,7 +141,9 @@ def print_greeting(session, message):
 
 # Main script execution
 if __name__ == "__main__":
-    # csv_file_path = 'ecommerce.csv'
+    users_fp = './dataset/users_DEMO.csv'
+    recommendations_fp = './dataset/recommendations_DEMO.csv'
+    games_fp = './dataset/games.csv'
 
     # Connect to Redis
     redis_conn = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -77,9 +169,16 @@ if __name__ == "__main__":
     neo4j_uri = "bolt://localhost:7687"
     neo4j_driver = GraphDatabase.driver(neo4j_uri, auth=("neo4j", neo4j_password))
 
-    with neo4j_driver.session() as session:
-        greeting = print_greeting(session, "hello, world")
-        print(greeting)
+    import_data_to_postgres(games_fp, 'games', pg_conn, pg_cursor)
+    import_data_to_postgres(recommendations_fp, 'recommendations', pg_conn, pg_cursor)
+    import_data_to_postgres(users_fp, 'users', pg_conn, pg_cursor)
+    import_data_to_neo4j(neo4j_driver)
+
+    # with neo4j_driver.session() as session:
+    #     greeting = print_greeting(session, "hello, world")
+    #     print(greeting)
+
+
 
     # try:
     #     # Import data to Redis
