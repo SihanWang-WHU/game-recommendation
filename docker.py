@@ -166,7 +166,7 @@ if __name__ == "__main__":
         port=postgres_port
     )
     pg_cursor = pg_conn.cursor()
-
+    ##TODO :这里会导致每次运行的时候直接在数据库后面又导入一边数据 得加一个只在第一遍跑的时候导入的判断条件
     # for csv_file_path in tqdm(csv_file_path_all):
     #     create_table_sql=generate_create_table_query(csv_file_path, csv_file_path.split('/')[-1].split('.')[0])
     #     import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
