@@ -3,8 +3,8 @@ services:
   postgres:
     image: postgres:16.1
     environment:
-      POSTGRES_PASSWORD: 
-      POSTGRES_DB: test
+      POSTGRES_PASSWORD:    ### YOUR PASSWORD FOR POSTGRESQL CONN
+      POSTGRES_DB:   ### YOUR DESTINATION DB
       POSTGRES_USER: postgres
     ports:
       - "5439:5432"
@@ -23,8 +23,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: 
-      MONGO_INITDB_ROOT_PASSWORD: 
+      MONGO_INITDB_ROOT_USERNAME:  ### YOUR USERNAME FOR MANGODB CONN
+      MONGO_INITDB_ROOT_PASSWORD:  ### YOUR PASSWORD FOR MANGODB CONN
     volumes:
       - mongodata:/data/db
 
@@ -34,7 +34,7 @@ services:
       - "7474:7474"
       - "7687:7687"
     environment:
-      NEO4J_AUTH: neo4j/
+      NEO4J_AUTH: neo4j/ ## YOUR PASSWORD
     volumes:
       - /Users/chiuchiu/Desktop/game-recommendation-main/neo4j_import:/var/lib/neo4j/import
 
