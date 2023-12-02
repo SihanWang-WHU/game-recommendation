@@ -36,7 +36,7 @@ services:
     environment:
       NEO4J_AUTH: neo4j/ ## YOUR PASSWORD
     volumes:
-      - /Users/chiuchiu/Desktop/game-recommendation-main/neo4j_import:/var/lib/neo4j/import
+      - /Users/wxq/Desktop/game-recommendation-main/neo4j_import:/var/lib/neo4j/import
 
 volumes:
   pgdata:
