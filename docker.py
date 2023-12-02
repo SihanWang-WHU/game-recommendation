@@ -12,6 +12,7 @@ from neo4j import GraphDatabase
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
+from flask import jsonify
 
 
 ## MAKE YOUR CHANGES ACCORDINGLY.
@@ -188,14 +189,88 @@ def import_json_to_mongodb(json_file_path, db_name, collection_name, host='local
 
 
 
-
-#def recommend_games():
+# def recommend_games():
     # use Neo4j to generate game recommendations.
     #return jsonify(recommendation_result)
 
-#def search_games():
-    # execute queries
-    #return jsonify(search_results)
+
+
+
+########## search game ##########
+def game_search(query_params, db_name, collection_name, pg_conn):
+    mongo_query_params = {}
+    pg_query_params = {}
+
+    for key, value in query_params.items():
+        if key in ['tags', 'tags_include_exclude', 'description']:
+            mongo_query_params[key] = value
+        else:
+            pg_query_params[key] = value
+
+    mongo_results = execute_mongo_query(mongo_query_params, db_name, collection_name) if mongo_query_params else []
+    pg_results = execute_postgres_query(pg_query_params, pg_conn) if pg_query_params else []
+
+    return merge_or_compare_results(mongo_results, pg_results)
+
+def merge_or_compare_results(mongo_results, pg_results):
+    # combine MongoDB with PostgreSQL
+    combined_results = mongo_results + pg_results
+    return json.dumps(combined_results, default=str)
+
+def execute_mongo_query(queries, db_name, collection_name):
+    client = pymongo.MongoClient(host='localhost', port=27017, username=mongo_username, password=mongo_password, authSource='admin')
+    db = client[db_name]
+    collection = db[collection_name]
+
+    query_dict = {}
+
+    for key, value in queries.items():
+        if  key == 'tags':
+            query_dict["tags"] = {"$all": value}
+        elif key == 'tags_include_exclude':
+            query_dict["tags"] = {"$in": value}
+        elif key == 'description':
+            collection.create_index([("description", pymongo.TEXT)])
+            query_dict["$text"] = {"$search": value}
+
+    result = list(collection.find(query_dict))
+    return json.dumps(result, default=str)
+
+def execute_postgres_query(query_params, pg_conn):
+    query_conditions = []
+    for query_type, query_param in query_params.items():
+        if query_type == 'app_id':
+            query_conditions.append(f"app_id = {query_param}")
+        elif query_type == 'title':
+            query_conditions.append(f"title ILIKE '%{query_param}%'")
+        elif query_type == 'rating':
+            query_conditions.append(f"rating = '{query_param}'")
+        elif query_type == 'price':
+            query_conditions.append(f"price BETWEEN {query_param - 10} AND {query_param + 10}")
+        elif query_type == 'release_before':
+            query_conditions.append(f"date_release < '{query_param}'")
+        elif query_type == 'release_after':
+            query_conditions.append(f"date_release > '{query_param}'")
+        elif query_type == 'platform':
+            query_conditions.append(f"platform = '{query_param}'")
+        elif query_type == 'positive_ratio':
+            query_conditions.append(f"positive_ratio > {query_param}")
+        elif query_type == 'user_reviews':
+            query_conditions.append(f"user_reviews > {query_param}")
+        elif query_type == 'discount':
+            query_conditions.append(f"discount > {query_param}")
+        elif query_type == 'steam_deck':
+            query_conditions.append(f"steam_deck = {query_param}")  # Use TRUE or FALSE for the value of query_param
+
+    if query_conditions:
+        query = f"SELECT * FROM games WHERE {' AND '.join(query_conditions)};"
+        with pg_conn.cursor() as cursor:
+            cursor.execute(query)
+            records = cursor.fetchall()
+            return jsonify([dict(zip([col[0] for col in cursor.description], row)) for row in records])
+    else:
+        return jsonify([])
+
 
 # For further steps, we may need to define more functions.
 
@@ -246,6 +321,21 @@ if __name__ == "__main__":
     ### LAUNCH POSTGRES QUERIES
     for query in tqdm(queries):
         result, source = query_launcher(query, redis_conn, pg_cursor)
+
+    # Test cases for the game_search function
+    test_queries = [
+        {'title': 'Test Game 1'},
+        {'tags_include_exclude': ['Multiplayer', 'RPG']},
+        {'description': 'adventure'},
+        {'app_id': 12345},
+        {'price': 20, 'platform': 'PC'}
+    ]
+
+    # Execute each test case
+    for i, test_query in enumerate(test_queries):
+        print(f"Executing test case {i+1}")
+        result = game_search(test_query, 'Mangodb202', 'Mango_collection', pg_conn)
+        print(f"Results for test case {i+1}: {result}")
 
 
     # try:
