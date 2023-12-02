@@ -3,13 +3,13 @@ services:
   postgres:
     image: postgres:16.1
     environment:
-      POSTGRES_PASSWORD:    ### YOUR PASSWORD FOR POSTGRESQL CONN
-      POSTGRES_DB:   ### YOUR DESTINATION DB
+      POSTGRES_PASSWORD: postgresdb ### YOUR PASSWORD FOR POSTGRESQL CONN
+      POSTGRES_DB: postgres  ### YOUR DESTINATION DB
       POSTGRES_USER: postgres
     ports:
       - "5439:5432"
     volumes:
-      - /Users/wxq/Desktop/game-recommendation-main/dataset
+      - /Users/xueqiwang/Documents/ucsd/Data_Management/final_project/game-recommendation/dataset
 
   redis:
     image: redis:7.2.3
@@ -23,8 +23,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME:  ### YOUR USERNAME FOR MANGODB CONN
-      MONGO_INITDB_ROOT_PASSWORD:  ### YOUR PASSWORD FOR MANGODB CONN
+      MONGO_INITDB_ROOT_USERNAME: mangodb ### YOUR USERNAME FOR MANGODB CONN
+      MONGO_INITDB_ROOT_PASSWORD: mangopass ### YOUR PASSWORD FOR MANGODB CONN
     volumes:
       - mongodata:/data/db
 
@@ -36,7 +36,7 @@ services:
     environment:
       NEO4J_AUTH: neo4j/ ## YOUR PASSWORD
     volumes:
-      - /Users/wxq/Desktop/game-recommendation-main/neo4j_import:/var/lib/neo4j/import
+      - /Users/xueqiwang/Documents/ucsd/Data_Management/final_project/game-recommendation/neo4j_import:/var/lib/neo4j/import
 
 volumes:
   pgdata:
