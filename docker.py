@@ -13,17 +13,20 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+## MAKE YOUR CHANGES ACCORDINGLY.
 postgres_db_name = 'postgresdb'
 postgres_password = 'postgres'
 postgres_user = 'postgres'
 postgres_port = '5439'
 neo4j_username = 'neo4j'
 neo4j_password = 'neopassword'
-mongo_username = 'mongouser'
-mongo_password = 'mongopassword'
+mongo_username = 'mangodb'
+mongo_password = 'mangopass'
 
-# csv_file_path_all = ['/Users/chiuchiu/Desktop/game-recommendation-main/dataset/games.csv', '/Users/chiuchiu/Desktop/game-recommendation-main/dataset/recommendations.csv', '/Users/chiuchiu/Desktop/game-recommendation-main/dataset/users.csv']
+
 csv_file_path_all = ['./dataset/games.csv', './dataset/recommendations.csv', './dataset/users.csv']
+json_path='./dataset/games_metadata.json'
 
 
 def infer_sql_data_type(dtype, max_len=None):
@@ -73,8 +76,10 @@ def generate_create_table_query(csv_file, table_name):
 def import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor):
 
     # Execute the SQL statement to create the table
-    # pg_cursor.execute("SET search_path TO test")
-    # pg_conn.commit()
+    pg_cursor.execute("SET search_path TO public")
+    pg_conn.commit()
+    # for this step, set the path to your own destination.
+
     pg_cursor.execute(create_table_sql)
     pg_conn.commit()
     f=pd.read_csv(csv_file_path)
@@ -100,6 +105,7 @@ queries = [
     "(select r.app_id from users as u join recommendations r on u.user_id = r.user_id where u.products > 5 and u.reviews > 1 and r.is_recommended = TRUE) as hot_users "
     "join games g on g.app_id = hot_users.app_id "
 ]
+
 
 def query_launcher(query, redis_conn, pg_cursor):
     redis_key = 'query_result:' + query
@@ -152,6 +158,49 @@ def import_data_to_neo4j(driver):
 
 
 
+
+
+def import_json_to_mongodb(json_file_path, db_name, collection_name, host='localhost', port=27017, username=None, password=None):    
+    # Establish a connection to the MongoDB server
+    client_kwargs = {'host': host, 'port': port}
+    if username and password:
+        client_kwargs['username'] = username
+        client_kwargs['password'] = password
+        client_kwargs['authSource'] = 'admin'  # Default authSource is 'admin'
+    
+    client = pymongo.MongoClient(**client_kwargs)
+    
+    # Select the database and collection, IF NOT EXISTS, MANGODB AUTOMATICALLY CREATE ONE.
+    db = client[db_name]    
+    collection = db[collection_name]
+    
+    # Load the JSON file
+    with open(json_file_path, 'r') as file:
+        data_string = file.read()
+        # Assuming that each JSON object is separated by a newline
+        json_objects = data_string.split('\n')
+        for json_object in json_objects:
+            if json_object.strip():  # Skip empty lines
+                data = json.loads(json_object)
+                collection.insert_one(data)
+    
+    print(f"Data from {json_file_path} has been imported to the '{db_name}.{collection_name}' collection.")
+
+
+
+
+#def recommend_games():
+    # use Neo4j to generate game recommendations.
+    #return jsonify(recommendation_result)
+
+#def search_games():
+    # execute queries
+    #return jsonify(search_results)
+
+# For further steps, we may need to define more functions.
+
+
+
 # Main script execution
 if __name__ == "__main__":
 
@@ -166,18 +215,33 @@ if __name__ == "__main__":
         port=postgres_port
     )
     pg_cursor = pg_conn.cursor()
+
     ##TODO :这里会导致每次运行的时候直接在数据库后面又导入一边数据 得加一个只在第一遍跑的时候导入的判断条件
     # for csv_file_path in tqdm(csv_file_path_all):
     #     create_table_sql=generate_create_table_query(csv_file_path, csv_file_path.split('/')[-1].split('.')[0])
     #     import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
     # print('postgres successfully executed.')
 
+    for csv_file_path in tqdm(csv_file_path_all):
+         create_table_sql=generate_create_table_query(csv_file_path, csv_file_path.split('/')[-1].split('.')[0])
+         import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
+    print('postgres successfully executed.')
+
+
     neo4j_uri = "bolt://localhost:7687"
     neo4j_driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_username, neo4j_password))
+    import_data_to_neo4j(neo4j_driver)
     # import_data_to_neo4j(neo4j_driver)
 
-    mongo_conn = pymongo.MongoClient(f"mongodb://{mongo_username}:{mongo_password}@localhost:27017/")
-    mongo_db = mongo_conn["mydatabase"]
+
+    import_json_to_mongodb(json_path, db_name='Mangodb202', collection_name='Mango_collection', username= mongo_username, password= mongo_password)
+
+
+
+    #mongo_conn = pymongo.MongoClient(f"mongodb://{mongo_username}:{mongo_password}@localhost:27017/")
+    #mongo_db = mongo_conn["admin"]
+
+
 
     ### LAUNCH POSTGRES QUERIES
     for query in tqdm(queries):
