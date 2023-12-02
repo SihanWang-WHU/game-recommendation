@@ -9,7 +9,7 @@ services:
     ports:
       - "5439:5432"
     volumes:
-      - /Users/chiuchiu/Desktop/game-recommendation-main/dataset
+      - /Users/wxq/Desktop/game-recommendation-main/dataset
 
   redis:
     image: redis:7.2.3
