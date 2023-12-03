@@ -13,22 +13,6 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-## MAKE YOUR CHANGES ACCORDINGLY.
-postgres_db_name = 'postgresdb'
-postgres_password = 'postgres'
-postgres_user = 'postgres'
-postgres_port = '5439'
-neo4j_username = 'neo4j'
-neo4j_password = 'neopassword'
-mongo_username = 'mangodb'
-mongo_password = 'mangopass'
-
-
-csv_file_path_all = ['./dataset/games.csv', './dataset/recommendations.csv', './dataset/users.csv']
-json_path='./dataset/games_metadata.json'
-
-
 def infer_sql_data_type(dtype, max_len=None):
     # Map pandas dtypes to SQL data types
     if "int" in str(dtype):
@@ -138,11 +122,11 @@ def import_data_to_neo4j(driver):
         print('games file imported')
 
         # 导入推荐关系
-        session.run("LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS line "
-                    "MATCH (user:User {userId: line.user_id}) "
-                    "MATCH (game:Game {appId: line.app_id}) "
-                    "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
-        print('recommendations file matched and imported')
+        # session.run("LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS line "
+        #             "MATCH (user:User {userId: line.user_id}) "
+        #             "MATCH (game:Game {appId: line.app_id}) "
+        #             "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
+        # print('recommendations file matched and imported')
 
         # # Import User Data
         # session.run("LOAD CSV WITH HEADERS FROM 'file:///var/lib/neo4j/import/users.csv' AS line "
@@ -155,10 +139,6 @@ def import_data_to_neo4j(driver):
         #             "MATCH (user:User {userId: line.user_id}) "
         #             "MATCH (game:Game {appId: line.app_id}) "
         #             "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
-
-
-
-
 
 def import_json_to_mongodb(json_file_path, db_name, collection_name, host='localhost', port=27017, username=None, password=None):    
     # Establish a connection to the MongoDB server
@@ -175,7 +155,7 @@ def import_json_to_mongodb(json_file_path, db_name, collection_name, host='local
     collection = db[collection_name]
     
     # Load the JSON file
-    with open(json_file_path, 'r') as file:
+    with open(json_file_path, 'r',encoding='utf-8') as file:
         data_string = file.read()
         # Assuming that each JSON object is separated by a newline
         json_objects = data_string.split('\n')
@@ -185,6 +165,7 @@ def import_json_to_mongodb(json_file_path, db_name, collection_name, host='local
                 collection.insert_one(data)
     
     print(f"Data from {json_file_path} has been imported to the '{db_name}.{collection_name}' collection.")
+    return collection
 
 
 
@@ -232,7 +213,7 @@ def merge_results(mongo_results, pg_results):
     return merged_results_json
 
 
-def execute_mongo_query(query_params, db_name, collection_name):
+def execute_mongo_query(query_params, db_name, collection_name, mongo_username, mongo_password):
     client = pymongo.MongoClient(host='localhost', port=27017, username=mongo_username, password=mongo_password, authSource='admin')
     db = client[db_name]
     collection = db[collection_name]
@@ -287,51 +268,48 @@ def execute_postgres_query(query_params, pg_conn):
         return []
 
 
-# For further steps, we may need to define more functions.
+def read_config(file_path):
+    with open(file_path, 'r') as file:
+        config = json.load(file)
+    return config
 
-
-
-# Main script execution
-if __name__ == "__main__":
-
+def connect_and_import_data(config, csv_file_paths, json_path):
     ### IMPORT DATA TO DIFFERENT DATABASES
-    redis_conn = redis.StrictRedis(host='localhost', port=6379, db=0)
+    redis_conn = redis.StrictRedis(host='localhost', port=config['redis']['port'], db=config['redis']['database_name'])
 
     pg_conn = psycopg2.connect(
-        dbname=postgres_db_name,
-        user=postgres_user,
-        password=postgres_password,
+        dbname=config['postgres']['database_name'],
+        user=config['postgres']['username'],
+        password=config['postgres']['password'],
         host="localhost",
-        port=postgres_port
+        port=config['postgres']['port']
     )
     pg_cursor = pg_conn.cursor()
 
     ##TODO :这里会导致每次运行的时候直接在数据库后面又导入一边数据 得加一个只在第一遍跑的时候导入的判断条件
-    # for csv_file_path in tqdm(csv_file_path_all):
-    #     create_table_sql=generate_create_table_query(csv_file_path, csv_file_path.split('/')[-1].split('.')[0])
-    #     import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
+    # for fp in tqdm(csv_file_paths):
+    #      create_table_sql=generate_create_table_query(fp, fp.split('/')[-1].split('.')[0])
+    #      import_data_to_postgres(fp, create_table_sql, pg_conn, pg_cursor)
     # print('postgres successfully executed.')
-
-    for csv_file_path in tqdm(csv_file_path_all):
-         create_table_sql=generate_create_table_query(csv_file_path, csv_file_path.split('/')[-1].split('.')[0])
-         import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
-    print('postgres successfully executed.')
-
-
-    neo4j_uri = "bolt://localhost:7687"
-    neo4j_driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_username, neo4j_password))
-    import_data_to_neo4j(neo4j_driver)
+    #
+    # neo4j_uri = "bolt://localhost:7687"
+    # neo4j_driver = GraphDatabase.driver(neo4j_uri, auth=(config['neo4j']['username'], config['neo4j']['password']))
     # import_data_to_neo4j(neo4j_driver)
 
+    mongo_collection = import_json_to_mongodb(json_path, db_name=config['mongo']['database_name'], collection_name=config['mongo']['collection_name'],
+                                              username= config['mongo']['username'], password= config['mongo']['password'])
 
-    import_json_to_mongodb(json_path, db_name='Mangodb202', collection_name='Mango_collection', username= mongo_username, password= mongo_password)
+    return redis_conn, pg_conn, pg_cursor, neo4j_driver, mongo_collection
 
+# Main script execution
+if __name__ == "__main__":
+    csv_file_paths = ['./dataset/games.csv', './dataset/recommendations.csv', './dataset/users.csv']
+    json_path = './dataset/games_metadata.json'
+    config_path = './personal_config/sihan_config.json'
+    config = read_config(config_path)
 
-
-    #mongo_conn = pymongo.MongoClient(f"mongodb://{mongo_username}:{mongo_password}@localhost:27017/")
-    #mongo_db = mongo_conn["admin"]
-
-
+    (redis_conn, pg_conn, pg_cursor,
+     neo4j_driver, mongo_collection) = connect_and_import_data(config, csv_file_paths, json_path)
 
     ### LAUNCH POSTGRES QUERIES
     for query in tqdm(queries):
