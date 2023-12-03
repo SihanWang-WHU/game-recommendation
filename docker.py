@@ -137,12 +137,12 @@ def import_data_to_neo4j(driver):
                     "CREATE (:Game {appId: line.app_id, title: line.title})")
         print('games file imported')
 
-        # 导入推荐关系
-        session.run("LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS line "
-                    "MATCH (user:User {userId: line.user_id}) "
-                    "MATCH (game:Game {appId: line.app_id}) "
-                    "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
-        print('recommendations file matched and imported')
+        # # 导入推荐关系
+        # session.run("LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS line "
+        #             "MATCH (user:User {userId: line.user_id}) "
+        #             "MATCH (game:Game {appId: line.app_id}) "
+        #             "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
+        # print('recommendations file matched and imported')
 
         # # Import User Data
         # session.run("LOAD CSV WITH HEADERS FROM 'file:///var/lib/neo4j/import/users.csv' AS line "
@@ -169,13 +169,19 @@ def import_json_to_mongodb(json_file_path, db_name, collection_name, host='local
     # Select the database and collection, IF NOT EXISTS, MANGODB AUTOMATICALLY CREATE ONE.
     db = client[db_name]    
     collection = db[collection_name]
+
+    # Check if the collection already has data
+    if collection.estimated_document_count() > 0:
+        # Collection exists and has data, skip data import
+        print(f"Collection '{db_name}.{collection_name}' already exists and has data. Skipping data import.")
+        return collection
     
     # Load the JSON file
     with open(json_file_path, 'r',encoding='utf-8') as file:
         data_string = file.read()
         # Assuming that each JSON object is separated by a newline
         json_objects = data_string.split('\n')
-        for json_object in json_objects:
+        for json_object in tqdm(json_objects):
             if json_object.strip():  # Skip empty lines
                 data = json.loads(json_object)
                 collection.insert_one(data)
@@ -361,8 +367,3 @@ if __name__ == "__main__":
     #     if pg_conn is not None:
     #         pg_conn.close()
     #     # Redis connection does not need to be closed
-
-
-
-
-
