@@ -235,7 +235,7 @@ def import_json_to_mongodb(json_file_path, db_name, collection_name, host='local
 
 
 ########## game for single search ##########
-def game_search(query_params, db_name, collection_name, pg_conn):
+def game_search(config, query_params, pg_conn):
     mongo_query_params = {}
     pg_query_params = {}
 
@@ -245,7 +245,8 @@ def game_search(query_params, db_name, collection_name, pg_conn):
         else:
             pg_query_params[key] = value
 
-    mongo_results = execute_mongo_query(mongo_query_params, db_name, collection_name) if mongo_query_params else []
+    mongo_results = execute_mongo_query(mongo_query_params, config['mongo']['database_name'], config['mongo']['collection_name'],
+                                        config['mongo']['username'], config['mongo']['password']) if mongo_query_params else []
     pg_results = execute_postgres_query(pg_query_params, pg_conn) if pg_query_params else []
     return merge_results(mongo_results, pg_results)
 
@@ -294,6 +295,7 @@ def execute_mongo_query(query_params, db_name, collection_name, mongo_username, 
 
 def execute_postgres_query(query_params, pg_conn):
     query_conditions = []
+    ## TODO: 这里的query_type要根据postgres中定义的col名称来修改，注意如platform这种的列是T/F值，如果要筛选的话可能要新加列
     for query_type, query_param in query_params.items():
         if query_type == 'app_id':
             query_conditions.append(f"app_id = {query_param}")
@@ -371,36 +373,18 @@ if __name__ == "__main__":
      neo4j_driver, mongo_collection) = connect_and_import_data(config, csv_file_paths, json_path)
 
     ### LAUNCH POSTGRES QUERIES
-    for query in tqdm(queries):
-        result, source = query_launcher(query, redis_conn, pg_cursor)
+    # for query in tqdm(queries):
+    #     result, source = query_launcher(query, redis_conn, pg_cursor)
 
-    # # Test cases for the single game_search function
-    # test_queries = [
-    #     {'title': 'Test Game 1'},
-    #     {'app_id': 12345},
-    #     {'price': 20, 'platform': 'PC', 'tags_include_all': ['Multiplayer', 'RPG']}
-    # ]
+    # Test cases for the single game_search function
+    test_queries = [
+        {'title': 'The Night Fisherman'},
+        {'app_id': 1227449},
+        {'price_original': 20, 'platform': 'PC', 'tags_include_all': ['Multiplayer', 'RPG']}
+    ]
 
-    # # Execute each test case
-    # for i, test_query in enumerate(test_queries):
-    #     print(f"Executing test case {i+1}")
-    #     result = game_search(test_query, 'Mangodb202', 'Mango_collection', pg_conn)
-    #     print(f"Results for test case {i+1}: {result}")
-
-
-    # try:
-    #     # Import data to Redis
-    #     import_data_to_redis(csv_file_path, redis_conn)
-    #
-    #     # Import data to PostgreSQL
-    #     import_data_to_postgres(csv_file_path, pg_conn, pg_cursor)
-    #
-    # except Exception as e:
-    #     print(f"An error occurred: {e}")
-    # finally:
-    #     # Close the PostgreSQL cursor and connection
-    #     if pg_cursor is not None:
-    #         pg_cursor.close()
-    #     if pg_conn is not None:
-    #         pg_conn.close()
-    #     # Redis connection does not need to be closed
+    # Execute each test case
+    for i, test_query in enumerate(test_queries):
+        print(f"Executing test case {i+1}")
+        result = game_search(config, test_query, pg_conn)
+        print(f"Results for test case {i+1}: {result}")
