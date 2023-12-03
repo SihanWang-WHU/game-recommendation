@@ -271,7 +271,7 @@ def merge_results(mongo_results, pg_results):
             # direct add postgre
             merged_results[app_id] = pg_result
 
-    merged_results_list = list(merged_results.values())
+    merged_results_list = list(merged_results.values())[:5] # show top10 to test
     merged_results_json = json.dumps(merged_results_list, default=str)
     return merged_results_json
 
@@ -298,26 +298,29 @@ def execute_mongo_query(query_params, db_name, collection_name, mongo_username, 
 
 def execute_postgres_query(query_params, pg_conn):
     query_conditions = []
-    ## TODO: 这里的query_type要根据postgres中定义的col名称来修改，注意如platform这种的列是T/F值，如果要筛选的话可能要新加列
     for query_type, query_param in query_params.items():
         if query_type == 'app_id':
             query_conditions.append(f"app_id = {query_param}")
         elif query_type == 'title':
             query_conditions.append(f"title ILIKE '%{query_param}%'")
-        elif query_type == 'rating':
-            query_conditions.append(f"rating = '{query_param}'")
-        elif query_type == 'price':
-            query_conditions.append(f"price BETWEEN {query_param - 10} AND {query_param + 10}")
-        elif query_type == 'release_before':
-            query_conditions.append(f"date_release < '{query_param}'")
-        elif query_type == 'release_after':
+        elif query_type == 'date_release':
             query_conditions.append(f"date_release > '{query_param}'")
-        elif query_type == 'platform':
-            query_conditions.append(f"platform = '{query_param}'")
+        elif query_type == 'win':
+            query_conditions.append(f"win = '{query_param}'")
+        elif query_type == 'mac':
+            query_conditions.append(f"mac = '{query_param}'")
+        elif query_type == 'linux':
+            query_conditions.append(f"linux = '{query_param}'")
         elif query_type == 'positive_ratio':
             query_conditions.append(f"positive_ratio > {query_param}")
         elif query_type == 'user_reviews':
             query_conditions.append(f"user_reviews > {query_param}")
+        elif query_type == 'rating':
+            query_conditions.append(f"rating = '{query_param}'")
+        elif query_type == 'price_final':
+            query_conditions.append(f"price_final BETWEEN {query_param - 10} AND {query_param + 10}")
+        elif query_type == 'price_original':
+            query_conditions.append(f"price_original BETWEEN {query_param - 10} AND {query_param + 10}")
         elif query_type == 'discount':
             query_conditions.append(f"discount > {query_param}")
         elif query_type == 'steam_deck':
@@ -373,7 +376,7 @@ def connect_and_import_data(config, csv_file_paths, json_path):
 if __name__ == "__main__":
     csv_file_paths = ['./dataset/games.csv', './dataset/recommendations.csv', './dataset/users.csv']
     json_path = './dataset/games_metadata.json'
-    config_path = './personal_config/Jiacheng_config.json'
+    config_path = './personal_config/Xueqi_config.json'
     config = read_config(config_path)
 
     (redis_conn, pg_conn, pg_cursor,
@@ -387,11 +390,20 @@ if __name__ == "__main__":
     test_queries = [
         {'title': 'The Night Fisherman'},
         {'app_id': 1227449},
-        {'price_original': 20, 'win': 'true', 'tags_include_all': ['Multiplayer', 'RPG']}
+        {'price_original': 20, 'win': 'TRUE', 'tags_include_all': ['Multiplayer', 'RPG']},
+        {'windows': 'TRUE', 'mac': 'TRUE', 'linux': 'TRUE'},
+        {'date_released': '2020-01-01', 'tags_include_any': ['RPG', 'Strategy']},
+        {'user_reviews': 50, 'tags_include_any': ['Casual', 'RPG']},
+        {'positive_ratio': 80, 'user_reviews': 200, 'discount': 20}
     ]
 
-    # Execute each test case
+    all_results = []
+
+    ##### test game_search func ######
     for i, test_query in enumerate(test_queries):
-        print(f"Executing test case {i+1}")
+        print(f"Executing test case {i+1}: {test_query}")
         result = game_search(config, test_query, pg_conn)
-        print(f"Results for test case {i+1}: {result}")
+        all_results.append({"test_case": i+1, "query": test_query, "result": json.loads(result)})
+
+    with open('./search_game_test_result/game_search_res_limit_10.json', 'w', encoding='utf-8') as file:
+        json.dump(all_results, file, indent=4)

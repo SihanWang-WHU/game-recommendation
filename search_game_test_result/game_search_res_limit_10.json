@@ -1,0 +1,670 @@
+[
+    {
+        "test_case": 1,
+        "query": {
+            "title": "The Night Fisherman"
+        },
+        "result": [
+            {
+                "app_id": 1340810,
+                "title": "The Night Fisherman",
+                "date_release": "2020-06-29",
+                "win": true,
+                "mac": true,
+                "linux": false,
+                "rating": "Very Positive",
+                "positive_ratio": 83,
+                "user_reviews": 787,
+                "price_final": 0.0,
+                "price_original": 0.0,
+                "discount": 0.0,
+                "steam_deck": true
+            }
+        ]
+    },
+    {
+        "test_case": 2,
+        "query": {
+            "app_id": 1227449
+        },
+        "result": [
+            {
+                "app_id": 1227449,
+                "title": "RetroArch - Genesis Plus GX",
+                "date_release": "2020-06-16",
+                "win": true,
+                "mac": false,
+                "linux": true,
+                "rating": "Positive",
+                "positive_ratio": 100,
+                "user_reviews": 16,
+                "price_final": 0.0,
+                "price_original": 0.0,
+                "discount": 0.0,
+                "steam_deck": true
+            }
+        ]
+    },
+    {
+        "test_case": 3,
+        "query": {
+            "price_original": 20,
+            "win": "TRUE",
+            "tags_include_all": [
+                "Multiplayer",
+                "RPG"
+            ]
+        },
+        "result": [
+            {
+                "_id": "656cd29109260da2d6b4dd15",
+                "app_id": 253980,
+                "description": "Experience incredibly atmospheric and intense medieval combat action! Go ahead and enter a new world, the award-winning world of ENCLAVE!The people of Light and Darkness are divided by a bottomless rift that split the earth many millennia ago.",
+                "tags": [
+                    "RPG",
+                    "Action",
+                    "Fantasy",
+                    "Third Person",
+                    "Hack and Slash",
+                    "Adventure",
+                    "Singleplayer",
+                    "Classic",
+                    "Action RPG",
+                    "Magic",
+                    "Female Protagonist",
+                    "Atmospheric",
+                    "Multiplayer",
+                    "First-Person",
+                    "Great Soundtrack",
+                    "Nudity",
+                    "Open World",
+                    "Action-Adventure",
+                    "Dark Fantasy",
+                    "Medieval"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd21",
+                "app_id": 245950,
+                "description": "",
+                "tags": [
+                    "Action",
+                    "RPG",
+                    "FPS",
+                    "Co-op",
+                    "Shooter",
+                    "Action RPG",
+                    "Online Co-Op",
+                    "Open World",
+                    "Post-apocalyptic",
+                    "Multiplayer",
+                    "Comedy",
+                    "Addictive",
+                    "Dark Humor",
+                    "Loot",
+                    "First-Person",
+                    "Adventure",
+                    "Funny"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd3c",
+                "app_id": 402710,
+                "description": "Osiris: New Dawn is an unforgiving near future space survival game with a cinematic feel and elements of horror. Play as a Mission Specialist in single or multiplayer to build your planetary base, pilotable vehicles, and controllable drones as you explore a dangerous solar system far from Earth.",
+                "tags": [
+                    "Open World Survival Craft",
+                    "Horror",
+                    "Survival",
+                    "Space",
+                    "Open World",
+                    "Multiplayer",
+                    "Sci-fi",
+                    "Building",
+                    "Adventure",
+                    "Crafting",
+                    "Sandbox",
+                    "Base Building",
+                    "Early Access",
+                    "Co-op",
+                    "Action",
+                    "Singleplayer",
+                    "Aliens",
+                    "RPG",
+                    "Indie",
+                    "FPS"
+                ],
+                "title": "Osiris: New Dawn",
+                "date_release": "2023-01-18",
+                "win": true,
+                "mac": false,
+                "linux": false,
+                "rating": "Mixed",
+                "positive_ratio": 57,
+                "user_reviews": 12322,
+                "price_final": 19.99,
+                "price_original": 19.99,
+                "discount": 0.0,
+                "steam_deck": true
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd4b",
+                "app_id": 419990,
+                "description": "Ganbare! Super Strikers is an innovative mix between Tactical RPG and Soccer. Win matches to level up and earn new equipment that will allow you to learn special abilities, boost your players' stats or protect yourself against altered status effects, such as Sleep, Silence or Poison.",
+                "tags": [
+                    "Football (Soccer)",
+                    "Sports",
+                    "Strategy",
+                    "RPG",
+                    "Turn-Based",
+                    "Anime",
+                    "Indie",
+                    "Casual",
+                    "Turn-Based Tactics",
+                    "2D",
+                    "Strategy RPG",
+                    "Turn-Based Strategy",
+                    "Tactical RPG",
+                    "Colorful",
+                    "Tactical",
+                    "Character Customization",
+                    "Controller",
+                    "Grid-Based Movement",
+                    "4 Player Local",
+                    "Multiplayer"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd58",
+                "app_id": 274480,
+                "description": "Drox Operative is a starship action RPG with warring alien races, fierce space battles, a dynamic, evolving galaxy, and co-op multiplayer for Windows and Mac.Eons ago the Drox ruled the galaxy through their mighty Operatives. These elite starship captains were trained to accomplish the impossible at whatever cost necessary.",
+                "tags": [
+                    "Space",
+                    "Indie",
+                    "Action",
+                    "RPG",
+                    "Action RPG",
+                    "Sci-fi",
+                    "Co-op",
+                    "Procedural Generation",
+                    "Singleplayer",
+                    "Loot",
+                    "Multiplayer",
+                    "4X"
+                ],
+                "title": "Drox Operative",
+                "date_release": "2014-02-18",
+                "win": true,
+                "mac": true,
+                "linux": true,
+                "rating": "Very Positive",
+                "positive_ratio": 88,
+                "user_reviews": 263,
+                "price_final": 19.99,
+                "price_original": 19.99,
+                "discount": 0.0,
+                "steam_deck": true
+            }
+        ]
+    },
+    {
+        "test_case": 4,
+        "query": {
+            "windows": "TRUE",
+            "mac": "TRUE",
+            "linux": "TRUE"
+        },
+        "result": [
+            {
+                "app_id": 542220,
+                "title": "Rumpus",
+                "date_release": "2017-04-12",
+                "win": true,
+                "mac": true,
+                "linux": true,
+                "rating": "Positive",
+                "positive_ratio": 100,
+                "user_reviews": 11,
+                "price_final": 14.99,
+                "price_original": 14.99,
+                "discount": 0.0,
+                "steam_deck": true
+            },
+            {
+                "app_id": 986710,
+                "title": "Nusantara: Legend of The Winged Ones",
+                "date_release": "2018-12-07",
+                "win": true,
+                "mac": true,
+                "linux": true,
+                "rating": "Positive",
+                "positive_ratio": 95,
+                "user_reviews": 22,
+                "price_final": 4.99,
+                "price_original": 4.99,
+                "discount": 0.0,
+                "steam_deck": true
+            },
+            {
+                "app_id": 679230,
+                "title": "Tell a Demon",
+                "date_release": "2017-07-21",
+                "win": true,
+                "mac": true,
+                "linux": true,
+                "rating": "Positive",
+                "positive_ratio": 92,
+                "user_reviews": 14,
+                "price_final": 7.99,
+                "price_original": 7.99,
+                "discount": 0.0,
+                "steam_deck": true
+            },
+            {
+                "app_id": 1645270,
+                "title": "Art of Destruction",
+                "date_release": "2022-02-14",
+                "win": true,
+                "mac": true,
+                "linux": true,
+                "rating": "Mostly Positive",
+                "positive_ratio": 77,
+                "user_reviews": 40,
+                "price_final": 1.99,
+                "price_original": 1.99,
+                "discount": 0.0,
+                "steam_deck": true
+            },
+            {
+                "app_id": 404010,
+                "title": "Total War: WARHAMMER - Chaos Warriors",
+                "date_release": "2016-05-24",
+                "win": true,
+                "mac": true,
+                "linux": true,
+                "rating": "Mixed",
+                "positive_ratio": 43,
+                "user_reviews": 1018,
+                "price_final": 7.99,
+                "price_original": 7.99,
+                "discount": 0.0,
+                "steam_deck": true
+            }
+        ]
+    },
+    {
+        "test_case": 5,
+        "query": {
+            "date_released": "2020-01-01",
+            "tags_include_any": [
+                "RPG",
+                "Strategy"
+            ]
+        },
+        "result": [
+            {
+                "_id": "656cd29109260da2d6b4dd11",
+                "app_id": 113020,
+                "description": "Monaco: What's Yours Is Mine is a single player or co-op heist game. Assemble a crack team of thieves, case the joint, and pull off the perfect heist.",
+                "tags": [
+                    "Co-op",
+                    "Stealth",
+                    "Indie",
+                    "Heist",
+                    "Local Co-Op",
+                    "Strategy",
+                    "Online Co-Op",
+                    "Top-Down",
+                    "Action",
+                    "Multiplayer",
+                    "Crime",
+                    "Casual",
+                    "Great Soundtrack",
+                    "Adventure",
+                    "Pixel Graphics",
+                    "Local Multiplayer",
+                    "Controller",
+                    "2D",
+                    "Singleplayer",
+                    "Loot"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd13",
+                "app_id": 249050,
+                "description": "Dungeon of the Endless is a Rogue-Like Dungeon-Defense game, in which the player and their team of heroes must protect the generator of their crashed ship while exploring an ever-expanding dungeon, all while facing waves of monsters and special events as they try to find their way out...",
+                "tags": [
+                    "Roguelike",
+                    "Strategy",
+                    "Tower Defense",
+                    "Pixel Graphics",
+                    "Indie",
+                    "RPG",
+                    "Sci-fi",
+                    "Dungeon Crawler",
+                    "Adventure",
+                    "Perma Death",
+                    "Procedural Generation",
+                    "Resource Management",
+                    "Difficult",
+                    "Co-op",
+                    "Roguelite",
+                    "Survival",
+                    "Replay Value",
+                    "Great Soundtrack",
+                    "Singleplayer",
+                    "2D"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd15",
+                "app_id": 253980,
+                "description": "Experience incredibly atmospheric and intense medieval combat action! Go ahead and enter a new world, the award-winning world of ENCLAVE!The people of Light and Darkness are divided by a bottomless rift that split the earth many millennia ago.",
+                "tags": [
+                    "RPG",
+                    "Action",
+                    "Fantasy",
+                    "Third Person",
+                    "Hack and Slash",
+                    "Adventure",
+                    "Singleplayer",
+                    "Classic",
+                    "Action RPG",
+                    "Magic",
+                    "Female Protagonist",
+                    "Atmospheric",
+                    "Multiplayer",
+                    "First-Person",
+                    "Great Soundtrack",
+                    "Nudity",
+                    "Open World",
+                    "Action-Adventure",
+                    "Dark Fantasy",
+                    "Medieval"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd16",
+                "app_id": 271850,
+                "description": "",
+                "tags": [
+                    "Strategy",
+                    "Simulation",
+                    "Action",
+                    "RTS",
+                    "World War II"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd17",
+                "app_id": 282900,
+                "description": "Packed with fast-paced, turn-based RPG action, fourth-wall-breaking, trope-demolishing dialogue, and more item, weapon, and costume customization than you can shake a Lvl. 1 Stick at, Gamindustri is a world set on turning the concept of the JRPG on its head!",
+                "tags": [
+                    "Anime",
+                    "JRPG",
+                    "Female Protagonist",
+                    "Cute",
+                    "RPG",
+                    "Singleplayer",
+                    "Comedy",
+                    "Funny",
+                    "Turn-Based",
+                    "Great Soundtrack",
+                    "Visual Novel",
+                    "Strategy",
+                    "Turn-Based Combat",
+                    "Nudity",
+                    "Story Rich",
+                    "Memes",
+                    "Adventure",
+                    "Action",
+                    "Sci-fi",
+                    "Casual"
+                ]
+            }
+        ]
+    },
+    {
+        "test_case": 6,
+        "query": {
+            "user_reviews": 50,
+            "tags_include_any": [
+                "Casual",
+                "RPG"
+            ]
+        },
+        "result": [
+            {
+                "_id": "656cd29109260da2d6b4dd11",
+                "app_id": 113020,
+                "description": "Monaco: What's Yours Is Mine is a single player or co-op heist game. Assemble a crack team of thieves, case the joint, and pull off the perfect heist.",
+                "tags": [
+                    "Co-op",
+                    "Stealth",
+                    "Indie",
+                    "Heist",
+                    "Local Co-Op",
+                    "Strategy",
+                    "Online Co-Op",
+                    "Top-Down",
+                    "Action",
+                    "Multiplayer",
+                    "Crime",
+                    "Casual",
+                    "Great Soundtrack",
+                    "Adventure",
+                    "Pixel Graphics",
+                    "Local Multiplayer",
+                    "Controller",
+                    "2D",
+                    "Singleplayer",
+                    "Loot"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd13",
+                "app_id": 249050,
+                "description": "Dungeon of the Endless is a Rogue-Like Dungeon-Defense game, in which the player and their team of heroes must protect the generator of their crashed ship while exploring an ever-expanding dungeon, all while facing waves of monsters and special events as they try to find their way out...",
+                "tags": [
+                    "Roguelike",
+                    "Strategy",
+                    "Tower Defense",
+                    "Pixel Graphics",
+                    "Indie",
+                    "RPG",
+                    "Sci-fi",
+                    "Dungeon Crawler",
+                    "Adventure",
+                    "Perma Death",
+                    "Procedural Generation",
+                    "Resource Management",
+                    "Difficult",
+                    "Co-op",
+                    "Roguelite",
+                    "Survival",
+                    "Replay Value",
+                    "Great Soundtrack",
+                    "Singleplayer",
+                    "2D"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd15",
+                "app_id": 253980,
+                "description": "Experience incredibly atmospheric and intense medieval combat action! Go ahead and enter a new world, the award-winning world of ENCLAVE!The people of Light and Darkness are divided by a bottomless rift that split the earth many millennia ago.",
+                "tags": [
+                    "RPG",
+                    "Action",
+                    "Fantasy",
+                    "Third Person",
+                    "Hack and Slash",
+                    "Adventure",
+                    "Singleplayer",
+                    "Classic",
+                    "Action RPG",
+                    "Magic",
+                    "Female Protagonist",
+                    "Atmospheric",
+                    "Multiplayer",
+                    "First-Person",
+                    "Great Soundtrack",
+                    "Nudity",
+                    "Open World",
+                    "Action-Adventure",
+                    "Dark Fantasy",
+                    "Medieval"
+                ],
+                "title": "Enclave",
+                "date_release": "2013-10-04",
+                "win": true,
+                "mac": true,
+                "linux": true,
+                "rating": "Mostly Positive",
+                "positive_ratio": 75,
+                "user_reviews": 1608,
+                "price_final": 4.99,
+                "price_original": 4.99,
+                "discount": 0.0,
+                "steam_deck": true
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd17",
+                "app_id": 282900,
+                "description": "Packed with fast-paced, turn-based RPG action, fourth-wall-breaking, trope-demolishing dialogue, and more item, weapon, and costume customization than you can shake a Lvl. 1 Stick at, Gamindustri is a world set on turning the concept of the JRPG on its head!",
+                "tags": [
+                    "Anime",
+                    "JRPG",
+                    "Female Protagonist",
+                    "Cute",
+                    "RPG",
+                    "Singleplayer",
+                    "Comedy",
+                    "Funny",
+                    "Turn-Based",
+                    "Great Soundtrack",
+                    "Visual Novel",
+                    "Strategy",
+                    "Turn-Based Combat",
+                    "Nudity",
+                    "Story Rich",
+                    "Memes",
+                    "Adventure",
+                    "Action",
+                    "Sci-fi",
+                    "Casual"
+                ]
+            },
+            {
+                "_id": "656cd29109260da2d6b4dd1c",
+                "app_id": 29180,
+                "description": "Enter the ambient world of Osmos: elegant, physics-based gameplay, dreamlike visuals, and a minimalist, electronic soundtrack. Your objective is to grow by absorbing other motes. Propel yourself by ejecting matter behind you. But be wise: ejecting matter also shrinks you. Relax - good things come to those who wait.",
+                "tags": [
+                    "Indie",
+                    "Casual",
+                    "Puzzle",
+                    "Relaxing",
+                    "Singleplayer",
+                    "Physics",
+                    "Great Soundtrack",
+                    "Ambient",
+                    "Atmospheric",
+                    "2D",
+                    "Difficult",
+                    "Minimalist",
+                    "Space",
+                    "Procedural Generation",
+                    "Arcade",
+                    "Strategy",
+                    "Sci-fi",
+                    "Science",
+                    "Simulation",
+                    "Education"
+                ]
+            }
+        ]
+    },
+    {
+        "test_case": 7,
+        "query": {
+            "positive_ratio": 80,
+            "user_reviews": 200,
+            "discount": 20
+        },
+        "result": [
+            {
+                "app_id": 1843410,
+                "title": "theHunter: Call of the Wild\u2122 - Modern Rifle Pack",
+                "date_release": "2022-02-22",
+                "win": true,
+                "mac": false,
+                "linux": false,
+                "rating": "Very Positive",
+                "positive_ratio": 83,
+                "user_reviews": 430,
+                "price_final": 1.99,
+                "price_original": 3.99,
+                "discount": 50.0,
+                "steam_deck": true
+            },
+            {
+                "app_id": 1093700,
+                "title": "theHunter: Call of the Wild\u2122 - Yukon Valley",
+                "date_release": "2019-06-25",
+                "win": true,
+                "mac": false,
+                "linux": false,
+                "rating": "Very Positive",
+                "positive_ratio": 85,
+                "user_reviews": 596,
+                "price_final": 1.99,
+                "price_original": 7.99,
+                "discount": 75.0,
+                "steam_deck": true
+            },
+            {
+                "app_id": 615530,
+                "title": "Love Money Rock'n'Roll",
+                "date_release": "2022-08-04",
+                "win": true,
+                "mac": true,
+                "linux": true,
+                "rating": "Very Positive",
+                "positive_ratio": 83,
+                "user_reviews": 2268,
+                "price_final": 14.99,
+                "price_original": 19.99,
+                "discount": 25.0,
+                "steam_deck": true
+            },
+            {
+                "app_id": 695920,
+                "title": "Super Seducer : How to Talk to Girls",
+                "date_release": "2018-03-06",
+                "win": true,
+                "mac": true,
+                "linux": false,
+                "rating": "Very Positive",
+                "positive_ratio": 84,
+                "user_reviews": 1428,
+                "price_final": 4.02,
+                "price_original": 12.99,
+                "discount": 69.0,
+                "steam_deck": true
+            },
+            {
+                "app_id": 270210,
+                "title": "Melody's Escape",
+                "date_release": "2016-05-20",
+                "win": true,
+                "mac": true,
+                "linux": true,
+                "rating": "Very Positive",
+                "positive_ratio": 92,
+                "user_reviews": 4341,
+                "price_final": 3.39,
+                "price_original": 9.99,
+                "discount": 66.0,
+                "steam_deck": true
+            }
+        ]
+    }
+]
