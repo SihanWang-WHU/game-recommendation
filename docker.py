@@ -127,22 +127,60 @@ def query_launcher(query, redis_conn, pg_cursor):
 
 def import_data_to_neo4j(driver):
     with driver.session() as session:
+        session.run('''match(n)  detach  delete  n''')
+
         # 导入用户数据
-        session.run("LOAD CSV WITH HEADERS FROM 'file:///users.csv' AS line "
-                    "CREATE (:User {userId: line.user_id, products: toInteger(line.products), reviews: toInteger(line.reviews)})")
+        session.run(''' LOAD CSV WITH HEADERS FROM 'file:///games.csv' AS row
+                        CREATE (:Game {
+                                        app_id: toInteger(row.app_id),
+                                        title: row.title,
+                                        date_release: row.date_release,
+                                        win: row.win = 'True',
+                                        mac: row.mac = 'True',
+                                        linux: row.linux = 'True',
+                                        rating: row.rating,
+                                        positive_ratio: toInteger(row.positive_ratio),
+                                        user_reviews: toInteger(row.user_reviews),
+                                        price_final: toFloat(row.price_final),
+                                        price_original: toFloat(row.price_original),
+                                        discount: toFloat(row.discount),
+                                        steam_deck: row.steam_deck = 'True'});''')
         print('users file imported')
 
         # 导入游戏数据
-        session.run("LOAD CSV WITH HEADERS FROM 'file:///games.csv' AS line "
-                    "CREATE (:Game {appId: line.app_id, title: line.title})")
+        session.run(''' LOAD CSV WITH HEADERS FROM 'file:///users.csv' AS row
+                        CREATE (:User {
+                                       user_id: toInteger(row.user_id),
+                                       products: toInteger(row.products),
+                                       reviews: toInteger(row.reviews)});''')
         print('games file imported')
 
-        # # 导入推荐关系
-        # session.run("LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS line "
-        #             "MATCH (user:User {userId: line.user_id}) "
-        #             "MATCH (game:Game {appId: line.app_id}) "
-        #             "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
-        # print('recommendations file matched and imported')
+        session.run('''LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS row
+                        CREATE (:Recommendation {
+                                       helpful: toInteger(row.helpful),
+                                       funny: toInteger(row.funny),
+                                       date: row.date,
+                                       is_recommended: row.is_recommended = 'True',
+                                       hours: toFloat(row.hours),
+                                       review_id: toInteger(row.review_id),
+                                       user_id: toInteger(row.user_id),
+                                       game_id: toInteger(row.app_id)});''')
+        print('recommendations file imported')
+
+        session.run('''MATCH (user:User), (rec:Recommendation {user_id: user.user_id})
+                       CREATE (user)-[:HAS_RECOMMENDED]->(rec);''')
+        print('user to recommendation relationships created')
+
+        session.run(''' MATCH (game:Game), (rec:Recommendation {game_id: game.app_id})
+                        CREATE (rec)-[:RECOMMENDS]->(game);''')
+        print('recommendation to game relationships created')
+
+        session.run('''MATCH (u:User), (r:Recommendation), (g:Game)
+                       WHERE r.user_id = u.user_id AND r.game_id = g.app_id
+                       CREATE (u)-[:HAS_RECOMMENDED]->(r)-[:RECOMMENDS]->(g);''')
+
+        print('All data imported and relationships created')
+
 
         # # Import User Data
         # session.run("LOAD CSV WITH HEADERS FROM 'file:///var/lib/neo4j/import/users.csv' AS line "
@@ -335,7 +373,6 @@ if __name__ == "__main__":
     ### LAUNCH POSTGRES QUERIES
     for query in tqdm(queries):
         result, source = query_launcher(query, redis_conn, pg_cursor)
-
 
     # # Test cases for the single game_search function
     # test_queries = [
