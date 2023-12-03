@@ -188,14 +188,104 @@ def import_json_to_mongodb(json_file_path, db_name, collection_name, host='local
 
 
 
-
-#def recommend_games():
+# def recommend_games():
     # use Neo4j to generate game recommendations.
     #return jsonify(recommendation_result)
 
-#def search_games():
-    # execute queries
-    #return jsonify(search_results)
+
+########## game for single search ##########
+def game_search(query_params, db_name, collection_name, pg_conn):
+    mongo_query_params = {}
+    pg_query_params = {}
+
+    for key, value in query_params.items():
+        if key in ['tags_include_any', 'tags_include_all', 'description']:
+            mongo_query_params[key] = value
+        else:
+            pg_query_params[key] = value
+
+    mongo_results = execute_mongo_query(mongo_query_params, db_name, collection_name) if mongo_query_params else []
+    pg_results = execute_postgres_query(pg_query_params, pg_conn) if pg_query_params else []
+    return merge_results(mongo_results, pg_results)
+
+def merge_results(mongo_results, pg_results):
+    mongo_results_dict = {item['app_id']: item for item in mongo_results}
+    pg_results_dict = {item['app_id']: item for item in pg_results}
+
+    merged_results = {}
+
+    # first, add mongo_results into res
+    for app_id, mongo_result in mongo_results_dict.items():
+        merged_results[app_id] = mongo_result
+
+    # then, add update or add new pg_results into res
+    for app_id, pg_result in pg_results_dict.items():
+        if app_id in merged_results:
+            # merge mongo & postgres
+            merged_results[app_id].update(pg_result)
+        else:
+            # direct add postgre
+            merged_results[app_id] = pg_result
+
+    merged_results_list = list(merged_results.values())
+    merged_results_json = json.dumps(merged_results_list, default=str)
+    return merged_results_json
+
+
+def execute_mongo_query(query_params, db_name, collection_name):
+    client = pymongo.MongoClient(host='localhost', port=27017, username=mongo_username, password=mongo_password, authSource='admin')
+    db = client[db_name]
+    collection = db[collection_name]
+
+    query_dict = {}
+
+    for query_type, query_param in query_params.items():
+        if  query_type == 'tags_include_any':
+            query_dict["tags"] = {"$in": query_param}
+        elif query_type == 'tags_include_all':
+            query_dict["tags"] = {"$all": query_param}
+        elif query_type == 'description':
+            collection.create_index([("description", pymongo.TEXT)])
+            query_dict["$text"] = {"$search": query_param}
+
+    result = list(collection.find(query_dict)) # select *
+    return result
+
+def execute_postgres_query(query_params, pg_conn):
+    query_conditions = []
+    for query_type, query_param in query_params.items():
+        if query_type == 'app_id':
+            query_conditions.append(f"app_id = {query_param}")
+        elif query_type == 'title':
+            query_conditions.append(f"title ILIKE '%{query_param}%'")
+        elif query_type == 'rating':
+            query_conditions.append(f"rating = '{query_param}'")
+        elif query_type == 'price':
+            query_conditions.append(f"price BETWEEN {query_param - 10} AND {query_param + 10}")
+        elif query_type == 'release_before':
+            query_conditions.append(f"date_release < '{query_param}'")
+        elif query_type == 'release_after':
+            query_conditions.append(f"date_release > '{query_param}'")
+        elif query_type == 'platform':
+            query_conditions.append(f"platform = '{query_param}'")
+        elif query_type == 'positive_ratio':
+            query_conditions.append(f"positive_ratio > {query_param}")
+        elif query_type == 'user_reviews':
+            query_conditions.append(f"user_reviews > {query_param}")
+        elif query_type == 'discount':
+            query_conditions.append(f"discount > {query_param}")
+        elif query_type == 'steam_deck':
+            query_conditions.append(f"steam_deck = {query_param}")  # Use TRUE or FALSE for the value of query_param
+
+    if query_conditions:
+        query = f"SELECT * FROM games WHERE {' AND '.join(query_conditions)};"
+        with pg_conn.cursor() as cursor:
+            cursor.execute(query)
+            records = cursor.fetchall()
+            return [dict(zip([col[0] for col in cursor.description], row)) for row in records]  # 返回列表而不是 JSON 字符串
+    else:
+        return []
+
 
 # For further steps, we may need to define more functions.
 
@@ -246,6 +336,20 @@ if __name__ == "__main__":
     ### LAUNCH POSTGRES QUERIES
     for query in tqdm(queries):
         result, source = query_launcher(query, redis_conn, pg_cursor)
+
+
+    # # Test cases for the single game_search function
+    # test_queries = [
+    #     {'title': 'Test Game 1'},
+    #     {'app_id': 12345},
+    #     {'price': 20, 'platform': 'PC', 'tags_include_all': ['Multiplayer', 'RPG']}
+    # ]
+
+    # # Execute each test case
+    # for i, test_query in enumerate(test_queries):
+    #     print(f"Executing test case {i+1}")
+    #     result = game_search(test_query, 'Mangodb202', 'Mango_collection', pg_conn)
+    #     print(f"Results for test case {i+1}: {result}")
 
 
     # try:
