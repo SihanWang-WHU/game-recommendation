@@ -246,9 +246,24 @@ def game_search(config, query_params, pg_conn):
         else:
             pg_query_params[key] = value
 
+    # this logic is to ensure to return all features from MongoDB and all features from PostgreSQL
+    # execute PostgreSQL query
+    pg_results = execute_postgres_query(pg_query_params, pg_conn) if pg_query_params else []
+    app_ids_from_pg = [item['app_id'] for item in pg_results]
+
+    # execute MongoDB query
+    if app_ids_from_pg:
+        mongo_query_params['app_id_list'] = app_ids_from_pg
     mongo_results = execute_mongo_query(mongo_query_params, config['mongo']['database_name'], config['mongo']['collection_name'],
                                         config['mongo']['username'], config['mongo']['password']) if mongo_query_params else []
-    pg_results = execute_postgres_query(pg_query_params, pg_conn) if pg_query_params else []
+    app_ids_from_mongo = [item['app_id'] for item in mongo_results]
+
+    # if MongoDB returns new app_id，update PostgreSQL query
+    if app_ids_from_mongo:
+        pg_query_params['app_id_list'] = app_ids_from_mongo
+        additional_pg_results = execute_postgres_query(pg_query_params, pg_conn) if pg_query_params else []
+        pg_results.extend(additional_pg_results)
+
     return merge_results(mongo_results, pg_results)
 
 
@@ -283,6 +298,11 @@ def execute_mongo_query(query_params, db_name, collection_name, mongo_username, 
 
     query_dict = {}
 
+    if 'app_id_list' in query_params:
+        app_id_list = query_params['app_id_list']
+        query_dict['app_id'] = {'$in': app_id_list}
+        del query_params['app_id_list']
+
     for query_type, query_param in query_params.items():
         if  query_type == 'tags_include_any':
             query_dict["tags"] = {"$in": query_param}
@@ -298,6 +318,12 @@ def execute_mongo_query(query_params, db_name, collection_name, mongo_username, 
 
 def execute_postgres_query(query_params, pg_conn):
     query_conditions = []
+
+    if 'app_id_list' in query_params:
+        app_id_list = query_params['app_id_list']
+        query_conditions.append(f"app_id IN ({','.join(map(str, app_id_list))})")
+        del query_params['app_id_list']
+
     for query_type, query_param in query_params.items():
         if query_type == 'app_id':
             query_conditions.append(f"app_id = {query_param}")
