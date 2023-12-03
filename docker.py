@@ -298,10 +298,18 @@ def execute_mongo_query(query_params, db_name, collection_name, mongo_username, 
 
     query_dict = {}
 
-    if 'app_id_list' in query_params:
-        app_id_list = query_params['app_id_list']
+    # app_id_list
+    app_id_list = query_params.pop('app_id_list', [])
+
+    # if has single app_id param，ensure it in app_id_list
+    if 'app_id' in query_params:
+        app_id = query_params.pop('app_id')
+        if app_id not in app_id_list:
+            app_id_list.append(app_id)
+
+    # construct app_id query condition
+    if app_id_list:
         query_dict['app_id'] = {'$in': app_id_list}
-        del query_params['app_id_list']
 
     for query_type, query_param in query_params.items():
         if  query_type == 'tags_include_any':
@@ -319,10 +327,17 @@ def execute_mongo_query(query_params, db_name, collection_name, mongo_username, 
 def execute_postgres_query(query_params, pg_conn):
     query_conditions = []
 
-    if 'app_id_list' in query_params:
-        app_id_list = query_params['app_id_list']
+    app_id_list = query_params.pop('app_id_list', [])
+
+    # if has single app_id param，ensure it in app_id_list
+    if 'app_id' in query_params:
+        app_id = query_params.pop('app_id')
+        if app_id not in app_id_list:
+            app_id_list.append(app_id)
+
+    # construct app_id query condition
+    if app_id_list:
         query_conditions.append(f"app_id IN ({','.join(map(str, app_id_list))})")
-        del query_params['app_id_list']
 
     for query_type, query_param in query_params.items():
         if query_type == 'app_id':
