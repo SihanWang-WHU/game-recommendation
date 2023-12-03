@@ -340,9 +340,7 @@ def execute_postgres_query(query_params, pg_conn):
         query_conditions.append(f"app_id IN ({','.join(map(str, app_id_list))})")
 
     for query_type, query_param in query_params.items():
-        if query_type == 'app_id':
-            query_conditions.append(f"app_id = {query_param}")
-        elif query_type == 'title':
+        if query_type == 'title':
             query_conditions.append(f"title ILIKE '%{query_param}%'")
         elif query_type == 'date_release':
             query_conditions.append(f"date_release > '{query_param}'")
