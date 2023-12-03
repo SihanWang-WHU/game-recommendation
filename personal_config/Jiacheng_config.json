@@ -1,0 +1,40 @@
+{
+    "postgres": {
+        "port": 5439,
+        "username": "postgres",
+        "password": "postgrespass",
+        "database_name": "postgres",
+        "volumes": [
+            "/Users/chiuchiu/Desktop/game-recommendation-main/dataset"
+        ]
+    },
+    "redis": {
+        "port": 6379,
+        "username": null,
+        "password": null,
+        "database_name": 0,
+        "volumes": [
+            "redisdata:/data"
+        ]
+    },
+    "mongo": {
+        "port": "27017",
+        "username": null,
+        "password": null,
+        "database_name": "mongodb202",
+        "collection_name": "mongo_collection",
+        "volumes": [
+            "mongodata:/data/db"
+        ]
+    },
+    "neo4j": {
+        "port": 7474,
+        "username": "neo4j",
+        "password": "neopassword",
+        "database_name": null,
+        "volumes": [
+            "/Users/chiuchiu/Desktop/game-recommendation-main/neo4j_import:/var/lib/neo4j/import"
+            
+        ]
+    }
+}

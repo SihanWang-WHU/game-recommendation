@@ -3,13 +3,13 @@ services:
   postgres:
     image: postgres:16.1
     environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgresdb
+      POSTGRES_PASSWORD: postgrespass ### YOUR PASSWORD FOR POSTGRESQL CONN
+      POSTGRES_DB: postgres  ### YOUR DESTINATION DB
       POSTGRES_USER: postgres
     ports:
       - "5439:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - /Users/chiuchiu/Desktop/game-recommendation-main/dataset
 
   redis:
     image: redis:7.2.3
@@ -23,8 +23,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: mongouser
-      MONGO_INITDB_ROOT_PASSWORD: mongopassword
+      MONGO_INITDB_ROOT_USERNAME: 
+      MONGO_INITDB_ROOT_PASSWORD:
     volumes:
       - mongodata:/data/db
 
@@ -36,8 +36,7 @@ services:
     environment:
       NEO4J_AUTH: neo4j/neopassword
     volumes:
-      - neo4jdata:/data
-      - ./neo4j_import:/var/lib/neo4j/import
+      - /Users/chiuchiu/Desktop/game-recommendation-main/neo4j_import:/var/lib/neo4j/import
 
 volumes:
   pgdata:

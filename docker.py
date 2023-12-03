@@ -13,22 +13,6 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-## MAKE YOUR CHANGES ACCORDINGLY.
-postgres_db_name = 'postgresdb'
-postgres_password = 'postgres'
-postgres_user = 'postgres'
-postgres_port = '5439'
-neo4j_username = 'neo4j'
-neo4j_password = 'neopassword'
-mongo_username = 'mangodb'
-mongo_password = 'mangopass'
-
-
-csv_file_path_all = ['./dataset/games.csv', './dataset/recommendations.csv', './dataset/users.csv']
-json_path='./dataset/games_metadata.json'
-
-
 def infer_sql_data_type(dtype, max_len=None):
     # Map pandas dtypes to SQL data types
     if "int" in str(dtype):
@@ -82,6 +66,22 @@ def import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
 
     pg_cursor.execute(create_table_sql)
     pg_conn.commit()
+
+    # Get the table name from the CSV file name
+    table_name = csv_file_path.split('/')[-1].split('.')[0]
+
+    # Check if the table exists and has data
+    pg_cursor.execute(f"SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='{table_name}');")
+    table_exists = pg_cursor.fetchone()[0]
+
+    if table_exists:
+        pg_cursor.execute(f"SELECT COUNT(*) FROM {table_name};")
+        count = pg_cursor.fetchone()[0]
+        if count > 0:
+            # Table exists and has data, skip data import
+            print(f"Table '{table_name}' already exists and has data. Skipping data import.")
+            return
+
     f=pd.read_csv(csv_file_path)
 
     f_sql = f.astype(object).where(pd.notnull(f), None)  
@@ -127,22 +127,60 @@ def query_launcher(query, redis_conn, pg_cursor):
 
 def import_data_to_neo4j(driver):
     with driver.session() as session:
+        session.run('''match(n)  detach  delete  n''')
+
         # 导入用户数据
-        session.run("LOAD CSV WITH HEADERS FROM 'file:///users.csv' AS line "
-                    "CREATE (:User {userId: line.user_id, products: toInteger(line.products), reviews: toInteger(line.reviews)})")
+        session.run(''' LOAD CSV WITH HEADERS FROM 'file:///games.csv' AS row
+                        CREATE (:Game {
+                                        app_id: toInteger(row.app_id),
+                                        title: row.title,
+                                        date_release: row.date_release,
+                                        win: row.win = 'True',
+                                        mac: row.mac = 'True',
+                                        linux: row.linux = 'True',
+                                        rating: row.rating,
+                                        positive_ratio: toInteger(row.positive_ratio),
+                                        user_reviews: toInteger(row.user_reviews),
+                                        price_final: toFloat(row.price_final),
+                                        price_original: toFloat(row.price_original),
+                                        discount: toFloat(row.discount),
+                                        steam_deck: row.steam_deck = 'True'});''')
         print('users file imported')
 
         # 导入游戏数据
-        session.run("LOAD CSV WITH HEADERS FROM 'file:///games.csv' AS line "
-                    "CREATE (:Game {appId: line.app_id, title: line.title})")
+        session.run(''' LOAD CSV WITH HEADERS FROM 'file:///users.csv' AS row
+                        CREATE (:User {
+                                       user_id: toInteger(row.user_id),
+                                       products: toInteger(row.products),
+                                       reviews: toInteger(row.reviews)});''')
         print('games file imported')
 
-        # 导入推荐关系
-        session.run("LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS line "
-                    "MATCH (user:User {userId: line.user_id}) "
-                    "MATCH (game:Game {appId: line.app_id}) "
-                    "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
-        print('recommendations file matched and imported')
+        session.run('''LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS row
+                        CREATE (:Recommendation {
+                                       helpful: toInteger(row.helpful),
+                                       funny: toInteger(row.funny),
+                                       date: row.date,
+                                       is_recommended: row.is_recommended = 'True',
+                                       hours: toFloat(row.hours),
+                                       review_id: toInteger(row.review_id),
+                                       user_id: toInteger(row.user_id),
+                                       game_id: toInteger(row.app_id)});''')
+        print('recommendations file imported')
+
+        session.run('''MATCH (user:User), (rec:Recommendation {user_id: user.user_id})
+                       CREATE (user)-[:HAS_RECOMMENDED]->(rec);''')
+        print('user to recommendation relationships created')
+
+        session.run(''' MATCH (game:Game), (rec:Recommendation {game_id: game.app_id})
+                        CREATE (rec)-[:RECOMMENDS]->(game);''')
+        print('recommendation to game relationships created')
+
+        session.run('''MATCH (u:User), (r:Recommendation), (g:Game)
+                       WHERE r.user_id = u.user_id AND r.game_id = g.app_id
+                       CREATE (u)-[:HAS_RECOMMENDED]->(r)-[:RECOMMENDS]->(g);''')
+
+        print('All data imported and relationships created')
+
 
         # # Import User Data
         # session.run("LOAD CSV WITH HEADERS FROM 'file:///var/lib/neo4j/import/users.csv' AS line "
@@ -156,10 +194,6 @@ def import_data_to_neo4j(driver):
         #             "MATCH (game:Game {appId: line.app_id}) "
         #             "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
 
-
-
-
-
 def import_json_to_mongodb(json_file_path, db_name, collection_name, host='localhost', port=27017, username=None, password=None):    
     # Establish a connection to the MongoDB server
     client_kwargs = {'host': host, 'port': port}
@@ -167,105 +201,197 @@ def import_json_to_mongodb(json_file_path, db_name, collection_name, host='local
         client_kwargs['username'] = username
         client_kwargs['password'] = password
         client_kwargs['authSource'] = 'admin'  # Default authSource is 'admin'
-    
+
     client = pymongo.MongoClient(**client_kwargs)
-    
-    # Select the database and collection, IF NOT EXISTS, MANGODB AUTOMATICALLY CREATE ONE.
+
+
+    # Select the database and collection, IF NOT EXISTS, MONGODB AUTOMATICALLY CREATE ONE.
     db = client[db_name]    
     collection = db[collection_name]
     
+        # Check if the collection already has data
+    if collection.estimated_document_count() > 0:
+        # Collection exists and has data, skip data import
+        print(f"Collection '{db_name}.{collection_name}' already exists and has data. Skipping data import.")
+        return collection
+    
     # Load the JSON file
-    with open(json_file_path, 'r') as file:
+    with open(json_file_path, 'r',encoding='utf-8') as file:
         data_string = file.read()
         # Assuming that each JSON object is separated by a newline
         json_objects = data_string.split('\n')
-        for json_object in json_objects:
+        for json_object in tqdm(json_objects):
             if json_object.strip():  # Skip empty lines
                 data = json.loads(json_object)
                 collection.insert_one(data)
     
     print(f"Data from {json_file_path} has been imported to the '{db_name}.{collection_name}' collection.")
+    return collection
 
 
 
-
-#def recommend_games():
+# def recommend_games():
     # use Neo4j to generate game recommendations.
     #return jsonify(recommendation_result)
 
-#def search_games():
-    # execute queries
-    #return jsonify(search_results)
 
-# For further steps, we may need to define more functions.
+########## game for single search ##########
+def game_search(config, query_params, pg_conn):
+    mongo_query_params = {}
+    pg_query_params = {}
+
+    for key, value in query_params.items():
+        if key in ['tags_include_any', 'tags_include_all', 'description']:
+            mongo_query_params[key] = value
+        else:
+            pg_query_params[key] = value
+
+    mongo_results = execute_mongo_query(mongo_query_params, config['mongo']['database_name'], config['mongo']['collection_name'],
+                                        config['mongo']['username'], config['mongo']['password']) if mongo_query_params else []
+    pg_results = execute_postgres_query(pg_query_params, pg_conn) if pg_query_params else []
+    return merge_results(mongo_results, pg_results)
 
 
+def merge_results(mongo_results, pg_results):
+    mongo_results_dict = {item['app_id']: item for item in mongo_results}
+    pg_results_dict = {item['app_id']: item for item in pg_results}
 
-# Main script execution
-if __name__ == "__main__":
+    merged_results = {}
 
+    # first, add mongo_results into res
+    for app_id, mongo_result in mongo_results_dict.items():
+        merged_results[app_id] = mongo_result
+
+    # then, add update or add new pg_results into res
+    for app_id, pg_result in pg_results_dict.items():
+        if app_id in merged_results:
+            # merge mongo & postgres
+            merged_results[app_id].update(pg_result)
+        else:
+            # direct add postgre
+            merged_results[app_id] = pg_result
+
+    merged_results_list = list(merged_results.values())
+    merged_results_json = json.dumps(merged_results_list, default=str)
+    return merged_results_json
+
+
+def execute_mongo_query(query_params, db_name, collection_name, mongo_username, mongo_password):
+    client = pymongo.MongoClient(host='localhost', port=27017, username=mongo_username, password=mongo_password, authSource='admin')
+    db = client[db_name]
+    collection = db[collection_name]
+
+    query_dict = {}
+
+    for query_type, query_param in query_params.items():
+        if  query_type == 'tags_include_any':
+            query_dict["tags"] = {"$in": query_param}
+        elif query_type == 'tags_include_all':
+            query_dict["tags"] = {"$all": query_param}
+        elif query_type == 'description':
+            collection.create_index([("description", pymongo.TEXT)])
+            query_dict["$text"] = {"$search": query_param}
+
+    result = list(collection.find(query_dict)) # select *
+    return result
+
+
+def execute_postgres_query(query_params, pg_conn):
+    query_conditions = []
+    ## TODO: 这里的query_type要根据postgres中定义的col名称来修改，注意如platform这种的列是T/F值，如果要筛选的话可能要新加列
+    for query_type, query_param in query_params.items():
+        if query_type == 'app_id':
+            query_conditions.append(f"app_id = {query_param}")
+        elif query_type == 'title':
+            query_conditions.append(f"title ILIKE '%{query_param}%'")
+        elif query_type == 'rating':
+            query_conditions.append(f"rating = '{query_param}'")
+        elif query_type == 'price':
+            query_conditions.append(f"price BETWEEN {query_param - 10} AND {query_param + 10}")
+        elif query_type == 'release_before':
+            query_conditions.append(f"date_release < '{query_param}'")
+        elif query_type == 'release_after':
+            query_conditions.append(f"date_release > '{query_param}'")
+        elif query_type == 'platform':
+            query_conditions.append(f"platform = '{query_param}'")
+        elif query_type == 'positive_ratio':
+            query_conditions.append(f"positive_ratio > {query_param}")
+        elif query_type == 'user_reviews':
+            query_conditions.append(f"user_reviews > {query_param}")
+        elif query_type == 'discount':
+            query_conditions.append(f"discount > {query_param}")
+        elif query_type == 'steam_deck':
+            query_conditions.append(f"steam_deck = {query_param}")  # Use TRUE or FALSE for the value of query_param
+
+    if query_conditions:
+        query = f"SELECT * FROM games WHERE {' AND '.join(query_conditions)};"
+        with pg_conn.cursor() as cursor:
+            cursor.execute(query)
+            records = cursor.fetchall()
+            return [dict(zip([col[0] for col in cursor.description], row)) for row in records]  # 返回列表而不是 JSON 字符串
+    else:
+        return []
+
+
+def read_config(file_path):
+    with open(file_path, 'r') as file:
+        config = json.load(file)
+    return config
+
+
+def connect_and_import_data(config, csv_file_paths, json_path):
     ### IMPORT DATA TO DIFFERENT DATABASES
-    redis_conn = redis.StrictRedis(host='localhost', port=6379, db=0)
+    redis_conn = redis.StrictRedis(host='localhost', port=config['redis']['port'], db=config['redis']['database_name'])
 
     pg_conn = psycopg2.connect(
-        dbname=postgres_db_name,
-        user=postgres_user,
-        password=postgres_password,
+        dbname=config['postgres']['database_name'],
+        user=config['postgres']['username'],
+        password=config['postgres']['password'],
         host="localhost",
-        port=postgres_port
+        port=config['postgres']['port']
     )
     pg_cursor = pg_conn.cursor()
 
-    ##TODO :这里会导致每次运行的时候直接在数据库后面又导入一边数据 得加一个只在第一遍跑的时候导入的判断条件
-    # for csv_file_path in tqdm(csv_file_path_all):
-    #     create_table_sql=generate_create_table_query(csv_file_path, csv_file_path.split('/')[-1].split('.')[0])
-    #     import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
-    # print('postgres successfully executed.')
-
-    for csv_file_path in tqdm(csv_file_path_all):
-         create_table_sql=generate_create_table_query(csv_file_path, csv_file_path.split('/')[-1].split('.')[0])
-         import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
+    for fp in tqdm(csv_file_paths):
+         create_table_sql=generate_create_table_query(fp, fp.split('/')[-1].split('.')[0])
+         import_data_to_postgres(fp, create_table_sql, pg_conn, pg_cursor)
     print('postgres successfully executed.')
 
-
     neo4j_uri = "bolt://localhost:7687"
-    neo4j_driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_username, neo4j_password))
+    neo4j_driver = GraphDatabase.driver(neo4j_uri, auth=(config['neo4j']['username'], config['neo4j']['password']))
     import_data_to_neo4j(neo4j_driver)
-    # import_data_to_neo4j(neo4j_driver)
 
+    ##print(json_path, config['mongo']['database_name'], config['mongo']['collection_name'],config['mongo']['username'], config['mongo']['password'])
 
-    import_json_to_mongodb(json_path, db_name='Mangodb202', collection_name='Mango_collection', username= mongo_username, password= mongo_password)
+    mongo_collection = import_json_to_mongodb(json_path, db_name=config['mongo']['database_name'], collection_name=config['mongo']['collection_name'],
+                                              username= config['mongo']['username'], password= config['mongo']['password'])
+    
+    
+    return redis_conn, pg_conn, pg_cursor, neo4j_driver, mongo_collection
 
+# Main script execution
+if __name__ == "__main__":
+    csv_file_paths = ['./dataset/games.csv', './dataset/recommendations.csv', './dataset/users.csv']
+    json_path = './dataset/games_metadata.json'
+    config_path = './personal_config/Jiacheng_config.json'
+    config = read_config(config_path)
 
-
-    #mongo_conn = pymongo.MongoClient(f"mongodb://{mongo_username}:{mongo_password}@localhost:27017/")
-    #mongo_db = mongo_conn["admin"]
-
-
+    (redis_conn, pg_conn, pg_cursor,
+     neo4j_driver, mongo_collection) = connect_and_import_data(config, csv_file_paths, json_path)
 
     ### LAUNCH POSTGRES QUERIES
-    for query in tqdm(queries):
-        result, source = query_launcher(query, redis_conn, pg_cursor)
+    # for query in tqdm(queries):
+    #     result, source = query_launcher(query, redis_conn, pg_cursor)
 
+    # Test cases for the single game_search function
+    test_queries = [
+        {'title': 'The Night Fisherman'},
+        {'app_id': 1227449},
+        {'price_original': 20, 'win': 'true', 'tags_include_all': ['Multiplayer', 'RPG']}
+    ]
 
-    # try:
-    #     # Import data to Redis
-    #     import_data_to_redis(csv_file_path, redis_conn)
-    #
-    #     # Import data to PostgreSQL
-    #     import_data_to_postgres(csv_file_path, pg_conn, pg_cursor)
-    #
-    # except Exception as e:
-    #     print(f"An error occurred: {e}")
-    # finally:
-    #     # Close the PostgreSQL cursor and connection
-    #     if pg_cursor is not None:
-    #         pg_cursor.close()
-    #     if pg_conn is not None:
-    #         pg_conn.close()
-    #     # Redis connection does not need to be closed
-
-
-
-
-
+    # Execute each test case
+    for i, test_query in enumerate(test_queries):
+        print(f"Executing test case {i+1}")
+        result = game_search(config, test_query, pg_conn)
+        print(f"Results for test case {i+1}: {result}")
