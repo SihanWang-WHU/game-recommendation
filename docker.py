@@ -66,6 +66,22 @@ def import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
 
     pg_cursor.execute(create_table_sql)
     pg_conn.commit()
+
+    # Get the table name from the CSV file name
+    table_name = csv_file_path.split('/')[-1].split('.')[0]
+
+    # Check if the table exists and has data
+    pg_cursor.execute(f"SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='{table_name}');")
+    table_exists = pg_cursor.fetchone()[0]
+
+    if table_exists:
+        pg_cursor.execute(f"SELECT COUNT(*) FROM {table_name};")
+        count = pg_cursor.fetchone()[0]
+        if count > 0:
+            # Table exists and has data, skip data import
+            print(f"Table '{table_name}' already exists and has data. Skipping data import.")
+            return
+
     f=pd.read_csv(csv_file_path)
 
     f_sql = f.astype(object).where(pd.notnull(f), None)  
@@ -122,11 +138,11 @@ def import_data_to_neo4j(driver):
         print('games file imported')
 
         # 导入推荐关系
-        # session.run("LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS line "
-        #             "MATCH (user:User {userId: line.user_id}) "
-        #             "MATCH (game:Game {appId: line.app_id}) "
-        #             "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
-        # print('recommendations file matched and imported')
+        session.run("LOAD CSV WITH HEADERS FROM 'file:///recommendations.csv' AS line "
+                    "MATCH (user:User {userId: line.user_id}) "
+                    "MATCH (game:Game {appId: line.app_id}) "
+                    "MERGE (user)-[:RECOMMENDS {hours: toFloat(line.hours), date: line.date, isRecommended: line.is_recommended = 'True'}]->(game)")
+        print('recommendations file matched and imported')
 
         # # Import User Data
         # session.run("LOAD CSV WITH HEADERS FROM 'file:///var/lib/neo4j/import/users.csv' AS line "
@@ -286,15 +302,14 @@ def connect_and_import_data(config, csv_file_paths, json_path):
     )
     pg_cursor = pg_conn.cursor()
 
-    ##TODO :这里会导致每次运行的时候直接在数据库后面又导入一边数据 得加一个只在第一遍跑的时候导入的判断条件
-    # for fp in tqdm(csv_file_paths):
-    #      create_table_sql=generate_create_table_query(fp, fp.split('/')[-1].split('.')[0])
-    #      import_data_to_postgres(fp, create_table_sql, pg_conn, pg_cursor)
-    # print('postgres successfully executed.')
-    #
-    # neo4j_uri = "bolt://localhost:7687"
-    # neo4j_driver = GraphDatabase.driver(neo4j_uri, auth=(config['neo4j']['username'], config['neo4j']['password']))
-    # import_data_to_neo4j(neo4j_driver)
+    for fp in tqdm(csv_file_paths):
+         create_table_sql=generate_create_table_query(fp, fp.split('/')[-1].split('.')[0])
+         import_data_to_postgres(fp, create_table_sql, pg_conn, pg_cursor)
+    print('postgres successfully executed.')
+
+    neo4j_uri = "bolt://localhost:7687"
+    neo4j_driver = GraphDatabase.driver(neo4j_uri, auth=(config['neo4j']['username'], config['neo4j']['password']))
+    import_data_to_neo4j(neo4j_driver)
 
     mongo_collection = import_json_to_mongodb(json_path, db_name=config['mongo']['database_name'], collection_name=config['mongo']['collection_name'],
                                               username= config['mongo']['username'], password= config['mongo']['password'])
