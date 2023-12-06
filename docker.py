@@ -415,7 +415,7 @@ def connect_and_import_data(config, csv_file_paths, json_path):
 if __name__ == "__main__":
     csv_file_paths = ['./dataset/games.csv', './dataset/recommendations.csv', './dataset/users.csv']
     json_path = './dataset/games_metadata.json'
-    config_path = './personal_config/Xueqi_config.json'
+    config_path = './personal_config/Jiacheng_config.json'
     config = read_config(config_path)
 
     (redis_conn, pg_conn, pg_cursor,

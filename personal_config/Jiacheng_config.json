@@ -2,7 +2,7 @@
     "postgres": {
         "port": 5439,
         "username": "postgres",
-        "password": "postgrespass",
+        "password": "password111",
         "database_name": "postgres",
         "volumes": [
             "/Users/chiuchiu/Desktop/game-recommendation-main/dataset"
