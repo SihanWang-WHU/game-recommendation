@@ -51,23 +51,52 @@ def generate_random_game():
         'steam_deck': generate_boolean()
     }
 
+def insert_game(query, random_game, pg_cursor, pg_conn):
+    # execute the query
+    pg_cursor.execute(query, (
+        random_game['app_id'],
+        random_game['title'],
+        random_game['win'],
+        random_game['mac'],
+        random_game['linux'],
+        random_game['user_reviews'],
+        random_game['price_final'],
+        random_game['price_original'],
+        random_game['discount'],
+        random_game['steam_deck']
+    ))
 
-def query_launcher(query, redis_conn, pg_cursor):
-    redis_key = 'query_result:' + query
-    cached_result = redis_conn.get(redis_key)
+    pg_conn.commit()
 
-    if cached_result is not None:
-        print(f"Cache hit for query: {query}")
-        return json.loads(cached_result), 'cache'
-    else:
-        # If there is no cached result, execute the query on PostgreSQL
-        pg_cursor.execute(query)
-        result = pg_cursor.fetchall()
+def match_game(query, random_game, pg_cursor):
+    pg_cursor.execute(query, (
+        random_game['win'],
+        random_game['mac'],
+        random_game['linux'],
+        random_game['user_reviews'],
+        random_game['price_final'],
+        random_game['price_original'],
+        random_game['discount'],
+        random_game['steam_deck'],
+        random_game['app_id']
+    ))
+    similar_games = pg_cursor.fetchall()
+    return similar_games
 
-        # Cache the new result in Redis, serializing the result as a JSON string
-        redis_conn.setex(redis_key, 3600, json.dumps(result))
-        print(f"Cache miss for query: {query}")
-        return result, 'db'
+def create_relationships(driver, game_data, similarities):
+    with driver.session() as session:
+        session.run("""
+            CREATE (g:Game {app_id: $app_id, title: $title, win: $win, mac: $mac, 
+            linux: $linux, user_reviews: $user_reviews, price_final: $price_final, 
+            price_original: $price_original, discount: $discount, steam_deck: $steam_deck})
+            """, game_data)
+        for _, game_id2, score in similarities:
+            session.run("""
+                       MATCH (g1:Game {app_id: $game_id1}), (g2:Game {app_id: $game_id2})
+                       MERGE (g1)-[r:SIMILAR]->(g2)
+                       SET r.score = $score
+                       """, {"game_id1": game_data['app_id'], "game_id2": game_id2, "score": score})
+
 
 if __name__ == "__main__":
     csv_file_paths = ['./dataset/games.csv', './dataset/recommendations.csv', './dataset/users.csv']
@@ -77,27 +106,37 @@ if __name__ == "__main__":
     (redis_conn, pg_conn, pg_cursor,
      neo4j_driver, mongo_collection) = connect_and_import_data(config, csv_file_paths, json_path)
 
-    # Define your SQL queries as strings
-    query = '''SELECT g1.game_id AS game1, g2.game_id AS game2,
-       (ABS(g1.win::int - g2.win::int) * 5 +
-        ABS(g1.mac::int - g2.mac::int) * 5 +
-        ABS(g1.linux::int - g2.linux::int) * 5 +
-        ABS(g1.user_reviews - g2.user_reviews) * 10 +
-        ABS(g1.price_final - g2.price_final) * 20 +
-        ABS(g1.price_original - g2.price_original) * 20 +
-        ABS(g1.discount - g2.discount) * 15 +
-        ABS(g1.steam_deck::int - g2.steam_deck::int) * 5
-       ) AS similarity_score
-        FROM games g1, games g2
-        WHERE g1.game_id <> g2.game_id
-        ORDER BY similarity_score
-        LIMIT 10;
-    '''
-
-    ## LAUNCH POSTGRES QUERIES
-    result, source = query_launcher(query, redis_conn, pg_cursor)
-
     random_game = generate_random_game()
     print(random_game)
+
+    insert_query = """
+    INSERT INTO games (app_id, title, win, mac, linux, user_reviews, price_final, price_original, discount, steam_deck)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+    """
+    insert_game(insert_query, random_game, pg_cursor, pg_conn)
+
+    similarity_query = """
+    SELECT g.app_id, g.positive_ratio,
+           (ABS(g.win::int - %s::int) * 5 +
+            ABS(g.mac::int - %s::int) * 5 +
+            ABS(g.linux::int - %s::int) * 3 +
+            ABS(g.user_reviews - %s) * 30 +
+            ABS(g.price_final - %s) * 20 +
+            ABS(g.price_original - %s) * 20 +
+            ABS(g.discount - %s) * 15 +
+            ABS(g.steam_deck::int - %s::int) * 2)/10000 AS similarity_score
+    FROM games g
+    WHERE g.app_id <> %s
+    ORDER BY similarity_score Desc
+    LIMIT 25;"""
+
+    ## LAUNCH POSTGRES QUERIES
+    res = match_game(similarity_query, random_game, pg_cursor)
+    print(res)
+
+    similarities = [(random_game['app_id'], row[0], row[2]) for row in res]
+
+    # 导入数据并创建关系
+    create_relationships(neo4j_driver, random_game, similarities)
 
 
