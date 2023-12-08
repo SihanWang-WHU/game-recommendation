@@ -278,7 +278,7 @@ def game_cluster(pg_conn):
 
     games_data.to_csv('./game_cluster_result/clustered_games.csv', index=False)
 
-def game_cluster_import_to_neo5j(driver):
+def game_cluster_import_to_neo4j(driver):
     with driver.session() as session:
         session.run('''match(n)  detach  delete  n''')
 
@@ -516,7 +516,7 @@ if __name__ == "__main__":
 
     #### test game_clustering ######
     game_cluster(pg_conn)
-    game_cluster_import_to_neo5j(neo4j_driver)
+    game_cluster_import_to_neo4j(neo4j_driver)
 
     # neo4j query
     # MATCH (g:Game)-[:BELONGS_TO]->(c:Cluster) RETURN g, c
