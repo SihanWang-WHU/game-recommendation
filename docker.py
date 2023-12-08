@@ -100,34 +100,6 @@ def import_data_to_postgres(csv_file_path, create_table_sql, pg_conn, pg_cursor)
     pg_conn.commit()
 
 
-# Define your SQL queries as strings
-queries = [
-    "select title from games where mac=FALSE;",
-    "select g.app_id, g.title from games as g join recommendations r on g.app_id = r.app_id where r.helpful > 0",
-    "select u.user_id from users as u join recommendations r on u.user_id = r.user_id where u.products > 10",
-    "select g.title as recommended_games from"
-    "(select r.app_id from users as u join recommendations r on u.user_id = r.user_id where u.products > 5 and u.reviews > 1 and r.is_recommended = TRUE) as hot_users "
-    "join games g on g.app_id = hot_users.app_id "
-]
-
-
-def query_launcher(query, redis_conn, pg_cursor):
-    redis_key = 'query_result:' + query
-    cached_result = redis_conn.get(redis_key)
-    
-    if cached_result is not None:
-        print(f"Cache hit for query: {query}")
-        return json.loads(cached_result), 'cache'
-    else:
-        # If there is no cached result, execute the query on PostgreSQL
-        pg_cursor.execute(query)
-        result = pg_cursor.fetchall()
-        
-        # Cache the new result in Redis, serializing the result as a JSON string
-        redis_conn.setex(redis_key, 3600, json.dumps(result))
-        print(f"Cache miss for query: {query}")
-        return result, 'db'
-
 
 def import_data_to_neo4j(driver):
     with driver.session() as session:
@@ -487,10 +459,6 @@ if __name__ == "__main__":
 
     (redis_conn, pg_conn, pg_cursor,
      neo4j_driver, mongo_collection) = connect_and_import_data(config, csv_file_paths, json_path)
-
-    ### LAUNCH POSTGRES QUERIES
-    # for query in tqdm(queries):
-    #     result, source = query_launcher(query, redis_conn, pg_cursor)
 
     # Test cases for the single game_search function
     test_queries = [
