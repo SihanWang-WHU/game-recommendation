@@ -124,10 +124,10 @@ if __name__ == "__main__":
             ABS(g.price_final - %s) * 20 +
             ABS(g.price_original - %s) * 20 +
             ABS(g.discount - %s) * 15 +
-            ABS(g.steam_deck::int - %s::int) * 2)/10000 AS similarity_score
+            ABS(g.steam_deck::int - %s::int) * 2)/100 AS similarity_score
     FROM games g
     WHERE g.app_id <> %s
-    ORDER BY similarity_score Desc
+    ORDER BY similarity_score
     LIMIT 25;"""
 
     ## LAUNCH POSTGRES QUERIES
