@@ -134,9 +134,13 @@ if __name__ == "__main__":
     res = match_game(similarity_query, random_game, pg_cursor)
     print(res)
 
-    similarities = [(random_game['app_id'], row[0], row[2]) for row in res]
+    # calculate the weighted balance
+    weighted_sum_with_none = sum(score * (1 / weight) for _, score, weight in res if score is not None)
+    total_weight_with_none = sum(1 / weight for _, score, weight in res if score is not None)
+    weighted_average = weighted_sum_with_none / total_weight_with_none if total_weight_with_none else None
+    print('The predicted positive ratio of this new game is {0}'.format(weighted_average))
 
-    # 导入数据并创建关系
+    similarities = [(random_game['app_id'], row[0], row[2]) for row in res]
     create_relationships(neo4j_driver, random_game, similarities)
 
 
