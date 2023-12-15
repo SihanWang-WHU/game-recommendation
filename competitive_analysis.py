@@ -96,6 +96,44 @@ def create_relationships(driver, game_data, similarities):
                        MERGE (g1)-[r:SIMILAR]->(g2)
                        SET r.score = $score
                        """, {"game_id1": game_data['app_id'], "game_id2": game_id2, "score": score})
+def find_similar_games_neo4j(driver, game_data):
+    with driver.session() as session:
+        # 执行查询并创建关系
+        result = session.run("""
+        MATCH (original:Game {app_id: $app_id}), (g:Game)
+        WHERE g.app_id <> $app_id
+        WITH original, g, abs((CASE g.win WHEN true THEN 1 ELSE 0 END) - (CASE $win WHEN true THEN 1 ELSE 0 END)) +
+             abs((CASE g.mac WHEN true THEN 1 ELSE 0 END) - (CASE $mac WHEN true THEN 1 ELSE 0 END)) +
+             abs((CASE g.linux WHEN true THEN 1 ELSE 0 END) - (CASE $linux WHEN true THEN 1 ELSE 0 END)) +
+             abs(g.user_reviews - $user_reviews) + abs(g.price_final - $price_final) AS similarity
+        ORDER BY similarity
+        LIMIT 10
+        MERGE (original)-[r:NEO4J_SEARCH]->(g)
+        SET r.similarity = similarity
+        RETURN g.app_id AS similar_game_id, similarity
+        """, {
+            'app_id': game_data['app_id'],
+            'win': game_data['win'],
+            'mac': game_data['mac'],
+            'linux': game_data['linux'],
+            'user_reviews': game_data['user_reviews'],
+            'price_final': game_data['price_final']
+        })
+
+        similar_games = []
+        for record in result:
+            if record["similar_game_id"] is not None:
+                similar_games.append({
+                    "similar_game_id": record["similar_game_id"],
+                    "similarity": record["similarity"]
+                })
+
+        if not similar_games:
+            print("No similar games found.")
+        else:
+            print("Similar games found:", similar_games)
+
+        return similar_games
 
 
 if __name__ == "__main__":
@@ -111,15 +149,14 @@ if __name__ == "__main__":
 
     insert_query = """
     INSERT INTO games (app_id, title, win, mac, linux, user_reviews, price_final, price_original, discount, steam_deck)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-    """
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"""
     insert_game(insert_query, random_game, pg_cursor, pg_conn)
 
     similarity_query = """
     SELECT g.app_id, g.positive_ratio,
            (ABS(g.win::int - %s::int) * 5 +
             ABS(g.mac::int - %s::int) * 5 +
-            ABS(g.linux::int - %s::int) * 3 +
+            ABS(g.linux::int - %s::int) * 3 + 
             ABS(g.user_reviews - %s) * 30 +
             ABS(g.price_final - %s) * 20 +
             ABS(g.price_original - %s) * 20 +
@@ -142,5 +179,9 @@ if __name__ == "__main__":
 
     similarities = [(random_game['app_id'], row[0], row[2]) for row in res]
     create_relationships(neo4j_driver, random_game, similarities)
+
+    # Neo4j - Find similar games
+    similar_games_neo4j = find_similar_games_neo4j(neo4j_driver, random_game)
+    print("Similar games from Neo4j:", similar_games_neo4j)
 
 
