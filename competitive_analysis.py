@@ -98,7 +98,6 @@ def create_relationships(driver, game_data, similarities):
                        """, {"game_id1": game_data['app_id'], "game_id2": game_id2, "score": score})
 def find_similar_games_neo4j(driver, game_data):
     with driver.session() as session:
-        # 执行查询并创建关系
         result = session.run("""
         MATCH (original:Game {app_id: $app_id}), (g:Game)
         WHERE g.app_id <> $app_id
